@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Conteo Cíclico — Colgate</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f8f9fb;--card:#fff;--border:#e2e5ea;--text:#1a1d23;--text2:#6b7280;--green:#1d9e75;--amber:#ba7517;--red:#d85a30;--blue:#378add;--purple:#7f77dd;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px}
+.nav{background:#1a1d23;color:#fff;padding:0 24px;display:flex;align-items:center;border-bottom:3px solid var(--blue);position:sticky;top:0;z-index:100}
+.nav-brand{font-weight:700;font-size:15px;padding:14px 20px 14px 0;border-right:1px solid #333;margin-right:4px}
+.nav-tabs{display:flex;overflow-x:auto}
+.nav-tab{padding:14px 16px;cursor:pointer;font-size:13px;color:#9ca3af;border-bottom:3px solid transparent;margin-bottom:-3px;transition:all .2s;white-space:nowrap}
+.nav-tab:hover{color:#fff}
+.nav-tab.active{color:#fff;border-bottom-color:var(--blue)}
+.nav-right{margin-left:auto;font-size:12px;color:#6b7280;padding:14px 0;white-space:nowrap}
+.page{display:none;padding:24px;max-width:1400px;margin:0 auto}
+.page.active{display:block}
+.g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.met{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.met .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:6px}
+.met .val{font-size:28px;font-weight:700;line-height:1}
+.met .sub{font-size:11px;color:var(--text2);margin-top:6px}
+.met .def{font-size:10px;color:#9ca3af;font-style:italic;margin-top:3px}
+.met .bar{height:4px;border-radius:4px;background:#e5e7eb;margin-top:10px}
+.met .bar-fill{height:4px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.card-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:99px}
+.ok{background:#eaf3de;color:#3b6d11}.warn{background:#faeeda;color:#854f0b}.err{background:#fcebeb;color:#a32d2d}
+.abc-a{background:#e6f1fb;color:#185fa5}.abc-b{background:#eeedfe;color:#534ab7}.abc-c{background:#f1efe8;color:#5f5e5a}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;color:var(--text2);font-weight:500;border-bottom:1.5px solid var(--border);background:#f9fafb;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{background:#f3f4f6}
+td{padding:7px 10px;border-bottom:1px solid #f0f1f3;vertical-align:middle}
+tr:hover td{background:#f9fafb}
+.sort-asc::after{content:' ▲';font-size:10px}.sort-desc::after{content:' ▼';font-size:10px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center}
+.filters input,.filters select{font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none}
+.filters input:focus,.filters select:focus{border-color:var(--blue)}
+.btn{font-size:12px;padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--card);cursor:pointer;color:var(--text)}
+.btn:hover{background:#f3f4f6}
+.section-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.section-hdr h2{font-size:17px;font-weight:600}
+.section-hdr p{font-size:12px;color:var(--text2);margin-top:2px}
+.prog{display:flex;align-items:center;gap:8px}
+.prog-bar{flex:1;height:6px;background:#e5e7eb;border-radius:4px;min-width:60px}
+.prog-fill{height:6px;border-radius:4px}
+.prog span{font-size:11px;font-weight:600;min-width:36px;text-align:right}
+.chart-box{position:relative}
+.donut-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px}
+.donut-legend span{display:flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:2px;display:inline-block;flex-shrink:0}
+.pend-alert{background:#fff9e6;border:1px solid #f6c90e44;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px}
+.info-box{background:#e6f1fb;border:1px solid #b5d4f444;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px}
+.footer{text-align:center;padding:20px;font-size:11px;color:#9ca3af;margin-top:20px}
+
+/* ── PLANNING ── */
+.month-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border)}
+.month-tab{padding:10px 22px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
+.month-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.month-tab:hover{color:var(--text)}
+.month-page{display:none}.month-page.active{display:block}
+.gantt-grid{display:grid;grid-template-columns:140px repeat(4,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;font-size:12px}
+.gantt-hdr{background:#f3f4f6;padding:8px 10px;font-weight:600;color:var(--text2);text-align:center;font-size:11px}
+.gantt-cell{background:var(--card);padding:6px 8px;text-align:center;font-size:11px}
+.gantt-label{background:var(--card);padding:6px 10px;font-weight:500;white-space:nowrap}
+.gantt-bar{height:16px;border-radius:3px;display:inline-block;min-width:4px}
+.plan-legend{display:flex;gap:16px;margin-bottom:12px;font-size:12px;flex-wrap:wrap}
+.plan-legend span{display:flex;align-items:center;gap:5px}
+.cap-bar-wrap{background:#f0f1f3;border-radius:6px;height:12px;position:relative;overflow:hidden}
+.cap-bar-fill{height:12px;border-radius:6px;position:absolute;left:0;top:0;transition:width .5s}
+.summary-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;margin:3px}
+.est-block{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;min-width:52px;margin:3px;border:1px solid transparent}
+.est-grid{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:8px}
+
+@media(max-width:768px){.g2,.g3{grid-template-columns:1fr}.nav-tab{padding:12px 10px;font-size:11px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-brand">📦 Colgate WH</div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('dashboard',this)">Dashboard</div>
+    <div class="nav-tab" onclick="showPage('planificacion',this)">Planificación 3M</div>
+    <div class="nav-tab" onclick="showPage('abc',this)">ABC de SKUs</div>
+    <div class="nav-tab" onclick="showPage('pendientes',this)">Pendientes</div>
+    <div class="nav-tab" onclick="showPage('kpis',this)">KPIs</div>
+  </div>
+  <div class="nav-right">Abr–Jun 2026 · Colgate</div>
+</nav>
+
+<!-- ═══════════ DASHBOARD ═══════════ -->
+<div id="page-dashboard" class="page active">
+  <div class="section-hdr">
+    <div><h2>Dashboard — Conteo Cíclico</h2><p>11.308 registros · 330 SKUs · Abril–Junio 2026</p></div>
+  </div>
+  <div class="g4">
+    <div class="met">
+      <div class="lbl">IRA</div><div class="val" style="color:#1d9e75">99.50%</div>
+      <div class="sub">11.251 de 11.308 líneas exactas</div>
+      <div class="bar"><div class="bar-fill" style="width:99.5%;background:#1d9e75"></div></div>
+      <div class="def">Inventory Record Accuracy · Meta ≥95%</div>
+    </div>
+    <div class="met">
+      <div class="lbl">ERI</div><div class="val" style="color:#1d9e75">99.50%</div>
+      <div class="sub">11.251 de 11.308 contados exactos</div>
+      <div class="bar"><div class="bar-fill" style="width:99.5%;background:#1d9e75"></div></div>
+      <div class="def">Exact Record Inventory · Meta ≥98%</div>
+    </div>
+    <div class="met">
+      <div class="lbl">ILA</div><div class="val" style="color:#1d9e75">96.86%</div>
+      <div class="sub">5.575 de 5.756 ubicaciones</div>
+      <div class="bar"><div class="bar-fill" style="width:96.86%;background:#1d9e75"></div></div>
+      <div class="def">Inventory Location Accuracy · Meta ≥95%</div>
+    </div>
+    <div class="met">
+      <div class="lbl">ARI</div><div class="val" style="color:#1d9e75">99.94%</div>
+      <div class="sub">Δ abs: 570 uds sobre 992.457</div>
+      <div class="bar"><div class="bar-fill" style="width:99.94%;background:#1d9e75"></div></div>
+      <div class="def">Absolute Record Inventory · Meta ≥97%</div>
+    </div>
+  </div>
+  <div class="g4">
+    <div class="met"><div class="lbl">Total líneas</div><div class="val">11.308</div><div class="sub">registros de conteo</div></div>
+    <div class="met"><div class="lbl">Con diferencia</div><div class="val" style="color:#d85a30">57</div><div class="sub">0.50% del total</div></div>
+    <div class="met"><div class="lbl">Unidades físicas</div><div class="val">992K</div><div class="sub">992.457 unidades contadas</div></div>
+    <div class="met"><div class="lbl">SKUs activos</div><div class="val">330</div><div class="sub">111 A · 87 B · 132 C</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">Distribución de resultados</div>
+      <div class="chart-box" style="height:200px"><canvas id="chart-pie" role="img" aria-label="Dist resultados"></canvas></div>
+      <div class="donut-legend">
+        <span><span class="dot" style="background:#1d9e75"></span>Sin diferencia 99.5% · 11.251</span>
+        <span><span class="dot" style="background:#d85a30"></span>Con diferencia 0.5% · 57</span>
+      </div>
+    </div>
+    <div class="card"><div class="card-title">IRA por mes</div>
+      <div class="chart-box" style="height:200px"><canvas id="chart-mes" role="img" aria-label="IRA mensual"></canvas></div>
+      <div class="donut-legend">
+        <span><span class="dot" style="background:#378add"></span>Abr 99.2%</span>
+        <span><span class="dot" style="background:#1d9e75"></span>May 99.9%</span>
+        <span><span class="dot" style="background:#ba7517"></span>Jun 99.3%</span>
+      </div>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">IRA por estante (11 estantes principales)</div>
+    <div class="chart-box" style="height:260px"><canvas id="chart-estante" role="img" aria-label="IRA estante"></canvas></div>
+  </div>
+  <div class="card"><div class="card-title">Observaciones registradas</div>
+    <div class="chart-box" style="height:180px"><canvas id="chart-obs" role="img" aria-label="Observaciones"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════ PLANIFICACIÓN 3M ═══════════ -->
+<div id="page-planificacion" class="page">
+  <div class="section-hdr">
+    <div>
+      <h2>Planificación de Conteo — Próximos 3 Meses</h2>
+      <p>Planificación por ubicación según clasificación ABC de estantes · Considerando lo ya contado (Abr–Jun 2026)</p>
+    </div>
+  </div>
+
+  <div class="info-box">
+    📋 <strong>Criterio de planificación por ABC:</strong>
+    <span class="badge abc-a" style="margin:0 6px">A</span> Estantes de alta rotación (BBB–LLL) → conteo <strong>mensual</strong> todos los meses.
+    <span class="badge abc-c" style="margin:0 6px">C</span> Zonas especiales (AAA, DR0, CMS…) → conteo <strong>cada 2 meses</strong> con prioridad según pendiente.
+    Capacidad: <strong>386 ubic/día · 22 días hábiles = 8.492 ubic/mes</strong>.
+  </div>
+
+  <!-- Resumen trimestral -->
+  <div class="g3" style="margin-bottom:20px">
+    <div class="met" style="border-top:4px solid #378add">
+      <div class="lbl">Julio 2026</div>
+      <div class="val" style="color:#185fa5">8.493</div>
+      <div class="sub">ubicaciones programadas</div>
+      <div class="sub" style="margin-top:6px">✦ 3.270 pendientes de Jun + ciclo A</div>
+      <div class="bar" style="margin-top:10px"><div class="bar-fill" style="width:100%;background:#378add"></div></div>
+      <div class="def">Capacidad: 8.492 · Ocupación: 100%</div>
+    </div>
+    <div class="met" style="border-top:4px solid #7f77dd">
+      <div class="lbl">Agosto 2026</div>
+      <div class="val" style="color:#534ab7">8.493</div>
+      <div class="sub">ubicaciones programadas</div>
+      <div class="sub" style="margin-top:6px">✦ Ciclo A + zonas especiales C</div>
+      <div class="bar" style="margin-top:10px"><div class="bar-fill" style="width:100%;background:#7f77dd"></div></div>
+      <div class="def">Capacidad: 8.492 · Ocupación: 100%</div>
+    </div>
+    <div class="met" style="border-top:4px solid #1d9e75">
+      <div class="lbl">Septiembre 2026</div>
+      <div class="val" style="color:#0f6e56">5.406</div>
+      <div class="sub">ubicaciones programadas</div>
+      <div class="sub" style="margin-top:6px">✦ Solo estantes A (ciclo mensual)</div>
+      <div class="bar" style="margin-top:10px"><div class="bar-fill" style="width:63.7%;background:#1d9e75"></div></div>
+      <div class="def">Capacidad: 8.492 · Ocupación: 63.7%</div>
+    </div>
+  </div>
+
+  <!-- Pestañas de mes -->
+  <div class="month-tabs">
+    <div class="month-tab active" onclick="showMonth(0,this)">📅 Julio 2026</div>
+    <div class="month-tab" onclick="showMonth(1,this)">📅 Agosto 2026</div>
+    <div class="month-tab" onclick="showMonth(2,this)">📅 Septiembre 2026</div>
+  </div>
+
+  <!-- ── Julio ── -->
+  <div id="month-0" class="month-page active">
+    <div class="g4" style="margin-bottom:16px">
+      <div class="met"><div class="lbl">Ubicaciones</div><div class="val">8.493</div><div class="sub">total mes</div></div>
+      <div class="met"><div class="lbl">Carryover Jun</div><div class="val" style="color:#d85a30">3.270</div><div class="sub">pendientes de completar</div></div>
+      <div class="met"><div class="lbl">Estantes A</div><div class="val" style="color:#185fa5">5.406</div><div class="sub">ciclo mensual</div></div>
+      <div class="met"><div class="lbl">Días disponibles</div><div class="val">22</div><div class="sub">386/día = 8.492 cap.</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Distribución semanal — Julio 2026</div>
+      <div class="plan-legend">
+        <span><span class="dot" style="background:#378add"></span>Estantes A (ciclo mensual)</span>
+        <span><span class="dot" style="background:#d85a30"></span>Pendientes Jun (carryover)</span>
+        <span><span class="dot" style="background:#888780"></span>Zonas C (especiales)</span>
+      </div>
+      <div class="chart-box" style="height:260px"><canvas id="chart-jul-weeks" role="img" aria-label="Plan semanal julio"></canvas></div>
+    </div>
+
+    <div class="g2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title"><span>Estantes A — Ciclo mensual</span><span class="badge abc-a">14 estantes · 5.406 ubic</span></div>
+        <div class="est-grid" id="est-grid-jul-a"></div>
+        <div class="tbl-wrap"><table id="tbl-jul-a">
+          <thead><tr><th>Estante</th><th>ABC</th><th>Ubic. total</th><th>Contadas Jun</th><th>Sem 1</th><th>Sem 2</th><th>Sem 3</th><th>Sem 4</th></tr></thead>
+          <tbody id="tbody-jul-a"></tbody>
+        </table></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title"><span>Zonas Especiales C + Carryover</span><span class="badge abc-c">20 zonas · 3.270 ubic pend.</span></div>
+        <div class="pend-alert" style="margin-bottom:10px">⚠️ <strong>3.270 ubicaciones</strong> sin contar de Junio: AAA (2.121), DR0 (444), CMS (264), GGG parcial (148), otras.</div>
+        <div class="tbl-wrap"><table id="tbl-jul-c">
+          <thead><tr><th>Estante</th><th>ABC</th><th>Pend. Jun</th><th>Total mes</th><th>Sem prioridad</th></tr></thead>
+          <tbody id="tbody-jul-c"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Agosto ── -->
+  <div id="month-1" class="month-page">
+    <div class="g4" style="margin-bottom:16px">
+      <div class="met"><div class="lbl">Ubicaciones</div><div class="val">8.493</div><div class="sub">total mes</div></div>
+      <div class="met"><div class="lbl">Estantes A</div><div class="val" style="color:#185fa5">5.406</div><div class="sub">ciclo mensual</div></div>
+      <div class="met"><div class="lbl">Zonas C</div><div class="val" style="color:#5f5e5a">3.087</div><div class="sub">segundo ciclo trimestral</div></div>
+      <div class="met"><div class="lbl">Días disponibles</div><div class="val">22</div><div class="sub">386/día = 8.492 cap.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Distribución semanal — Agosto 2026</div>
+      <div class="plan-legend">
+        <span><span class="dot" style="background:#378add"></span>Estantes A</span>
+        <span><span class="dot" style="background:#888780"></span>Zonas C</span>
+      </div>
+      <div class="chart-box" style="height:260px"><canvas id="chart-ago-weeks" role="img" aria-label="Plan semanal agosto"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title"><span>Estantes A — Ciclo mensual</span><span class="badge abc-a">14 estantes · 5.406 ubic</span></div>
+        <div class="tbl-wrap"><table id="tbl-ago-a">
+          <thead><tr><th>Estante</th><th>ABC</th><th>Ubic. total</th><th>Sem 1</th><th>Sem 2</th><th>Sem 3</th><th>Sem 4</th></tr></thead>
+          <tbody id="tbody-ago-a"></tbody>
+        </table></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title"><span>Zonas Especiales C — 2° ciclo</span><span class="badge abc-c">20 zonas · 3.087 ubic</span></div>
+        <div class="tbl-wrap"><table id="tbl-ago-c">
+          <thead><tr><th>Estante</th><th>ABC</th><th>Total ubic</th><th>Sem prioridad</th></tr></thead>
+          <tbody id="tbody-ago-c"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Septiembre ── -->
+  <div id="month-2" class="month-page">
+    <div class="g4" style="margin-bottom:16px">
+      <div class="met"><div class="lbl">Ubicaciones</div><div class="val">5.406</div><div class="sub">solo estantes A</div></div>
+      <div class="met"><div class="lbl">Capacidad libre</div><div class="val" style="color:#1d9e75">3.086</div><div class="sub">disponible para adelanto</div></div>
+      <div class="met"><div class="lbl">Ocupación</div><div class="val" style="color:#ba7517">63.7%</div><div class="sub">de 8.492 capacidad</div></div>
+      <div class="met"><div class="lbl">Cierre trimestre</div><div class="val">100%</div><div class="sub">estantes A contados 3x</div></div>
+    </div>
+    <div class="info-box" style="margin-bottom:16px">
+      💡 <strong>Septiembre tiene capacidad libre (3.086 ubic).</strong> Se puede usar para adelantar el ciclo de Octubre de las zonas C, o incorporar auditorías de calidad de SKUs A con más diferencias históricas (III, JJJ, HHH, KKK).
+    </div>
+    <div class="card">
+      <div class="card-title">Distribución semanal — Septiembre 2026</div>
+      <div class="plan-legend">
+        <span><span class="dot" style="background:#378add"></span>Estantes A</span>
+        <span><span class="dot" style="background:#e5e7eb"></span>Capacidad libre</span>
+      </div>
+      <div class="chart-box" style="height:260px"><canvas id="chart-sep-weeks" role="img" aria-label="Plan semanal septiembre"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>Estantes A — Ciclo mensual Sep</span><span class="badge abc-a">14 estantes · 5.406 ubic</span></div>
+      <div class="tbl-wrap"><table id="tbl-sep-a">
+        <thead><tr><th>Estante</th><th>ABC</th><th>Ubic. total</th><th>Conteos trim</th><th>Sem 1</th><th>Sem 2</th><th>Sem 3</th><th>Sem 4</th></tr></thead>
+        <tbody id="tbody-sep-a"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Vista trimestral completa — Resumen Jul/Ago/Sep</div>
+      <div class="chart-box" style="height:220px"><canvas id="chart-trimestral" role="img" aria-label="Resumen trimestral"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ABC ═══════════ -->
+<div id="page-abc" class="page">
+  <div class="section-hdr"><div><h2>Análisis ABC de SKUs</h2><p>330 SKUs clasificados por volumen · Total: 992.457 uds</p></div></div>
+  <div class="g3">
+    <div class="met" style="border-left:4px solid #378add">
+      <div class="lbl">Categoría A — Vital</div><div class="val" style="color:#185fa5">111 SKUs</div>
+      <div class="sub">79.8% del inventario físico</div><div class="sub" style="margin-top:4px">28 líneas con diferencia</div>
+    </div>
+    <div class="met" style="border-left:4px solid #7f77dd">
+      <div class="lbl">Categoría B — Importante</div><div class="val" style="color:#534ab7">87 SKUs</div>
+      <div class="sub">15.1% del inventario físico</div><div class="sub" style="margin-top:4px">12 líneas con diferencia</div>
+    </div>
+    <div class="met" style="border-left:4px solid #888780">
+      <div class="lbl">Categoría C — Menor</div><div class="val" style="color:#5f5e5a">132 SKUs</div>
+      <div class="sub">5.1% del inventario físico</div><div class="sub" style="margin-top:4px">17 líneas con diferencia</div>
+    </div>
+  </div>
+  <div class="g2" style="margin-bottom:16px">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Curva ABC acumulada</div>
+      <div class="chart-box" style="height:240px"><canvas id="chart-abc-curve" role="img" aria-label="Curva ABC"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Distribución % físico</div>
+      <div class="chart-box" style="height:240px"><canvas id="chart-abc-pie" role="img" aria-label="ABC pie"></canvas></div>
+      <div class="donut-legend">
+        <span><span class="dot" style="background:#378add"></span>A: 79.8%</span>
+        <span><span class="dot" style="background:#7f77dd"></span>B: 15.1%</span>
+        <span><span class="dot" style="background:#888780"></span>C: 5.1%</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      <span>Tabla de SKUs</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="sku-search" placeholder="Buscar SKU o descripción…" style="width:200px" oninput="filterSKU()">
+        <select id="sku-abc" onchange="filterSKU()"><option value="">Todos (ABC)</option><option value="A">Solo A</option><option value="B">Solo B</option><option value="C">Solo C</option></select>
+        <select id="sku-diff" onchange="filterSKU()"><option value="">Todos</option><option value="diff">Con diferencia</option><option value="ok">Sin diferencia</option></select>
+      </div>
+    </div>
+    <div id="sku-summary" style="font-size:12px;color:#6b7280;margin-bottom:10px"></div>
+    <div class="tbl-wrap">
+      <table id="sku-table">
+        <thead><tr>
+          <th onclick="sortSKU('abc')">#</th><th onclick="sortSKU('sku')">SKU</th>
+          <th onclick="sortSKU('desc')">Descripción</th><th onclick="sortSKU('abc')">ABC</th>
+          <th onclick="sortSKU('fisico')">Físico ↕</th><th onclick="sortSKU('pct_acum')">% Acum</th>
+          <th onclick="sortSKU('ira')">IRA</th><th onclick="sortSKU('conteos')">Conteos</th>
+          <th onclick="sortSKU('con_diff')">Con diff</th><th onclick="sortSKU('absdiff')">Δ abs</th>
+          <th>Meses</th><th>Estantes</th>
+        </tr></thead>
+        <tbody id="sku-tbody"></tbody>
+      </table>
+    </div>
+    <div id="sku-pages" style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:#6b7280"></div>
+  </div>
+</div>
+
+<!-- ═══════════ PENDIENTES ═══════════ -->
+<div id="page-pendientes" class="page">
+  <div class="section-hdr"><div><h2>SKUs / Ubicaciones Pendientes</h2><p>Estado de avance del conteo cíclico mensual · Ritmo: 386 ubicaciones/día</p></div></div>
+  <div class="pend-alert">⚠️ <strong>3.270 ubicaciones sin contar</strong> de 8.493 totales del mes. Ritmo actual: <strong>386 ubic/día</strong> → completa en ~<strong>9 días hábiles</strong>. Concentrado en: AAA (2.121), DR0 (444), CMS (264).</div>
+  <div class="g4">
+    <div class="met"><div class="lbl">Total pendientes mes</div><div class="val">8.493</div><div class="sub">ubicaciones programadas</div></div>
+    <div class="met"><div class="lbl">Contadas</div><div class="val" style="color:#1d9e75">5.223</div><div class="sub">61.5% completado</div></div>
+    <div class="met"><div class="lbl">Sin contar</div><div class="val" style="color:#d85a30">3.270</div><div class="sub">38.5% restante</div></div>
+    <div class="met"><div class="lbl">Días restantes est.</div><div class="val" style="color:#ba7517">~9</div><div class="sub">a 386 ubic/día</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Avance por estante</div>
+      <div class="chart-box" style="height:320px"><canvas id="chart-pend-est" role="img" aria-label="Pendientes estante"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Completitud general</div>
+      <div class="chart-box" style="height:200px"><canvas id="chart-pend-pie" role="img" aria-label="Contadas vs pendientes"></canvas></div>
+      <div class="donut-legend" style="margin-top:10px">
+        <span><span class="dot" style="background:#1d9e75"></span>Contadas: 5.223 (61.5%)</span>
+        <span><span class="dot" style="background:#d85a30"></span>Pendientes: 3.270 (38.5%)</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span>Detalle por estante</span>
+      <select id="pend-filter" onchange="renderPendTable()"><option value="all">Todos</option><option value="pend">Solo pendientes</option><option value="done">Completos</option></select>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Estante</th><th>Total</th><th>Contadas</th><th>Sin contar</th><th>Avance</th><th>Estado</th></tr></thead><tbody id="pend-tbody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══════════ KPIs ═══════════ -->
+<div id="page-kpis" class="page">
+  <div class="section-hdr"><div><h2>Referencia de KPIs de Inventario</h2><p>Definiciones, fórmulas y resultados Abr–Jun 2026</p></div></div>
+  <div class="card">
+    <div class="card-title">Resultados globales del período</div>
+    <table><thead><tr><th>KPI</th><th>Nombre</th><th>Fórmula</th><th>Meta</th><th>Abr</th><th>May</th><th>Jun</th><th>Global</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td><b>IRA</b></td><td>Inventory Record Accuracy</td><td>Sin diff / Total</td><td>≥95%</td><td>99.17%</td><td>99.87%</td><td>99.32%</td><td><b>99.50%</b></td><td><span class="badge ok">✓ Cumple</span></td></tr>
+      <tr><td><b>ERI</b></td><td>Exact Record Inventory</td><td>Exactos / Contados</td><td>≥98%</td><td>99.17%</td><td>99.87%</td><td>99.32%</td><td><b>99.50%</b></td><td><span class="badge ok">✓ Cumple</span></td></tr>
+      <tr><td><b>ILA</b></td><td>Inventory Location Accuracy</td><td>Ubic contadas / Pendientes</td><td>≥95%</td><td colspan="3" style="text-align:center;color:#6b7280">Acumulado</td><td><b>96.86%</b></td><td><span class="badge ok">✓ Cumple</span></td></tr>
+      <tr><td><b>ARI</b></td><td>Absolute Record Inventory</td><td>(Físico − |Δ|) / Físico</td><td>≥97%</td><td>99.98%</td><td>99.95%</td><td>99.85%</td><td><b>99.94%</b></td><td><span class="badge ok">✓ Cumple</span></td></tr>
+    </tbody></table>
+  </div>
+  <div class="g2">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Tendencia IRA vs ARI</div>
+      <div class="chart-box" style="height:220px"><canvas id="chart-kpi-trend" role="img" aria-label="Tendencia KPIs"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Estantes con más diferencias</div>
+      <table><thead><tr><th>Estante</th><th>Total</th><th>Con diff</th><th>IRA</th><th>Δ abs</th></tr></thead>
+      <tbody>
+        <tr><td><b>III</b></td><td>1.330</td><td style="color:#d85a30"><b>16</b></td><td><span class="badge warn">98.8%</span></td><td>127</td></tr>
+        <tr><td><b>JJJ</b></td><td>1.210</td><td style="color:#d85a30"><b>12</b></td><td><span class="badge warn">99.0%</span></td><td>15</td></tr>
+        <tr><td><b>HHH</b></td><td>1.698</td><td style="color:#d85a30"><b>11</b></td><td><span class="badge ok">99.4%</span></td><td>25</td></tr>
+        <tr><td><b>KKK</b></td><td>1.702</td><td style="color:#d85a30"><b>11</b></td><td><span class="badge ok">99.4%</span></td><td>21</td></tr>
+        <tr><td><b>LLL</b></td><td>965</td><td style="color:#d85a30"><b>3</b></td><td><span class="badge ok">99.7%</span></td><td>8</td></tr>
+        <tr><td><b>DDD</b></td><td>492</td><td style="color:#d85a30"><b>2</b></td><td><span class="badge ok">99.6%</span></td><td>100</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Dashboard Conteo Cíclico Colgate · Jul 2026 · 11.308 registros · 330 SKUs · 8.493 ubicaciones/mes</div>
+
+<script>
+// ── DATA ───────────────────────────────────────────────────
+const DATA = {"skus": [{"sku": "61046313.0", "desc": "HELLO MW 473ML CS SP CHARCOAL 6S", "fisico": 75824.0, "sistema": 75824.0, "absdiff": 0, "conteos": 479, "con_diff": 0, "sin_diff": 479, "ira": 100.0, "abc": "A", "pct_acum": 7.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "DDD", "KKK", "LLL"]}, {"sku": "FMXE85603", "desc": "CD COLGATE TrAcc Paq 3x75ml", "fisico": 51177.0, "sistema": 51176.0, "absdiff": 55.0, "conteos": 953, "con_diff": 1, "sin_diff": 952, "ira": 99.9, "abc": "A", "pct_acum": 12.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["1.0", "10.0", "12.0", "13.0", "15.0"]}, {"sku": "61029353.0", "desc": "Enj Buc COLG Plax Ice Infinity 180ml", "fisico": 29230.0, "sistema": 29233.0, "absdiff": 0, "conteos": 184, "con_diff": 0, "sin_diff": 184, "ira": 100.0, "abc": "A", "pct_acum": 15.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["6.0", "68.0", "70.0", "78.0", "BBB"]}, {"sku": "61054542.0", "desc": "DEO SS HYPOALLERGENIC AP  50GR", "fisico": 19974.0, "sistema": 19989.0, "absdiff": 0, "conteos": 69, "con_diff": 0, "sin_diff": 69, "ira": 100.0, "abc": "A", "pct_acum": 17.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "FFF"]}, {"sku": "61034008.0", "desc": "Cep Den COLGATE ZZ Charcoal 1pc", "fisico": 19403.0, "sistema": 19403.0, "absdiff": 0, "conteos": 51, "con_diff": 0, "sin_diff": 51, "ira": 100.0, "abc": "A", "pct_acum": 19.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["GGG", "HHH", "III", "LLL"]}, {"sku": "FMX03179D", "desc": "CD COLGATE TrAcc 75ml", "fisico": 19169.0, "sistema": 19168.0, "absdiff": 0, "conteos": 366, "con_diff": 0, "sin_diff": 366, "ira": 100.0, "abc": "A", "pct_acum": 21.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["11.0", "20.0", "23.0", "25.0", "3.0"]}, {"sku": "61000963.0", "desc": "TOOTHBRUSH ELMEX ULTRA SOFT DUO DISPLAY OF 10", "fisico": 16372.0, "sistema": 16372.0, "absdiff": 0, "conteos": 83, "con_diff": 0, "sin_diff": 83, "ira": 100.0, "abc": "A", "pct_acum": 23.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["2.0", "21.0", "30.0", "31.0", "34.0"]}, {"sku": "61034009.0", "desc": "Cep Den DENTO Plus Med 2x1", "fisico": 15846.0, "sistema": 15846.0, "absdiff": 0, "conteos": 68, "con_diff": 0, "sin_diff": 68, "ira": 100.0, "abc": "A", "pct_acum": 24.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "EEE", "FFF", "GGG"]}, {"sku": "FUS90750", "desc": "Deo SS Fresh 60gr", "fisico": 15217.0, "sistema": 15217.0, "absdiff": 0, "conteos": 61, "con_diff": 0, "sin_diff": 61, "ira": 100.0, "abc": "A", "pct_acum": 26.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["43.0", "48.0", "49.0", "50.0", "51.0"]}, {"sku": "CN00136A", "desc": "Cep Den DENTO Plus Suav 2x1", "fisico": 13448.0, "sistema": 13445.0, "absdiff": 0, "conteos": 70, "con_diff": 0, "sin_diff": 70, "ira": 100.0, "abc": "A", "pct_acum": 27.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["47.0", "CCC", "DDD", "EEE", "GGG"]}, {"sku": "US03667A", "desc": "LSS Derma Pearl Stick 45GR", "fisico": 11947.0, "sistema": 11948.0, "absdiff": 0, "conteos": 40, "con_diff": 0, "sin_diff": 40, "ira": 100.0, "abc": "A", "pct_acum": 29.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["27.0", "32.0", "CCC", "DDD", "EEE"]}, {"sku": "61029529.0", "desc": "TP COLGATE Triple Acciom 2x80ml", "fisico": 11594.0, "sistema": 11592.0, "absdiff": 2.0, "conteos": 265, "con_diff": 1, "sin_diff": 264, "ira": 99.6, "abc": "A", "pct_acum": 30.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["16.0", "19.0", "21.0", "24.0", "25.0"]}, {"sku": "61018999.0", "desc": "Jabon PROTEX Avena 3x90g", "fisico": 10936.0, "sistema": 10936.0, "absdiff": 0, "conteos": 145, "con_diff": 0, "sin_diff": 145, "ira": 100.0, "abc": "A", "pct_acum": 31.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["54.0", "BBB", "CCC", "DDD", "DEV"]}, {"sku": "CN00138A", "desc": "Cep Den DENTO  Plus Duro 2x1", "fisico": 10232.0, "sistema": 10230.0, "absdiff": 0, "conteos": 56, "con_diff": 0, "sin_diff": 56, "ira": 100.0, "abc": "A", "pct_acum": 32.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["67.0", "DDD", "EEE", "GGG", "HHH"]}, {"sku": "61024523.0", "desc": "Elmex Sensitive ProfessionalWhitnng 110g", "fisico": 10144.0, "sistema": 10122.0, "absdiff": 0, "conteos": 110, "con_diff": 0, "sin_diff": 110, "ira": 100.0, "abc": "A", "pct_acum": 33.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["3.0", "40.0", "43.0", "56.0", "57.0"]}, {"sku": "61000251.0", "desc": "Cep Dent COLGA 360 Black 2paq", "fisico": 10133.0, "sistema": 10133.0, "absdiff": 2.0, "conteos": 55, "con_diff": 1, "sin_diff": 54, "ira": 98.2, "abc": "A", "pct_acum": 34.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["28.0", "30.0", "CCC", "DDD", "GGG"]}, {"sku": "61039499.0", "desc": "DEO LSS CARBON ABSORB 45G 2PK", "fisico": 9949.0, "sistema": 9946.0, "absdiff": 0, "conteos": 73, "con_diff": 0, "sin_diff": 73, "ira": 100.0, "abc": "A", "pct_acum": 35.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["72.0", "CCC", "DDD", "EEE", "FFF"]}, {"sku": "VN01129A", "desc": "TB Pro Cuidado Single Sampling", "fisico": 9896.0, "sistema": 9896.0, "absdiff": 0, "conteos": 35, "con_diff": 0, "sin_diff": 35, "ira": 100.0, "abc": "A", "pct_acum": 36.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["52.0", "BBB", "CCC", "DDD", "EEE"]}, {"sku": "61046409.0", "desc": "TB COLG SUPER FLEXI FH S 2PK+C", "fisico": 9777.0, "sistema": 9777.0, "absdiff": 0, "conteos": 41, "con_diff": 0, "sin_diff": 41, "ira": 100.0, "abc": "A", "pct_acum": 37.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["44.0", "84.0", "CCC", "DDD", "EEE"]}, {"sku": "61046407.0", "desc": "CTBM TRIPLE_ACTION FH M 2PK LATAMx24", "fisico": 9699.0, "sistema": 9699.0, "absdiff": 1.0, "conteos": 39, "con_diff": 1, "sin_diff": 38, "ira": 97.4, "abc": "A", "pct_acum": 38.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["38.0", "39.0", "40.0", "41.0", "43.0"]}, {"sku": "FUS00448A", "desc": "Deo MENNEN LSS Orchard Blossom45gr", "fisico": 9558.0, "sistema": 9558.0, "absdiff": 0, "conteos": 38, "con_diff": 0, "sin_diff": 38, "ira": 100.0, "abc": "A", "pct_acum": 39.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["22.0", "33.0", "64.0", "CCC", "DDD"]}, {"sku": "61046922.0", "desc": "TB COLGATE ZZ Antibac Xtra Reach Soft 2p", "fisico": 9107.0, "sistema": 9107.0, "absdiff": 0, "conteos": 35, "con_diff": 0, "sin_diff": 35, "ira": 100.0, "abc": "A", "pct_acum": 40.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["52.0", "60.0", "79.0", "82.0", "BBB"]}, {"sku": "61000962.0", "desc": "Cepillo Dental ELMEX Ultra Suave", "fisico": 8795.0, "sistema": 8795.0, "absdiff": 0, "conteos": 30, "con_diff": 0, "sin_diff": 30, "ira": 100.0, "abc": "A", "pct_acum": 41.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["13.0", "32.0", "33.0", "DDD", "GGG"]}, {"sku": "61044074.0", "desc": "CTBM SlimSoft Charcoal CHS 2PK_Latam 24", "fisico": 8609.0, "sistema": 8609.0, "absdiff": 0, "conteos": 33, "con_diff": 0, "sin_diff": 33, "ira": 100.0, "abc": "A", "pct_acum": 41.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "EEE", "HHH", "III", "KKK"]}, {"sku": "61036303.0", "desc": "MSS Carbon Absorb 50g", "fisico": 8378.0, "sistema": 8378.0, "absdiff": 0, "conteos": 31, "con_diff": 0, "sin_diff": 31, "ira": 100.0, "abc": "A", "pct_acum": 42.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["14.0", "29.0", "50.0", "64.0", "9.0"]}, {"sku": "VN00154A", "desc": "Cep Den COLGATE 3Paq Twister PrEsp", "fisico": 7915.0, "sistema": 7915.0, "absdiff": 0, "conteos": 41, "con_diff": 0, "sin_diff": 41, "ira": 100.0, "abc": "A", "pct_acum": 43.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["69.0", "71.0", "78.0", "CCC", "GGG"]}, {"sku": "BR03805A", "desc": "CD COLGATE Lumin Whte Brilliant 140gr", "fisico": 7902.0, "sistema": 7900.0, "absdiff": 60.0, "conteos": 143, "con_diff": 1, "sin_diff": 142, "ira": 99.3, "abc": "A", "pct_acum": 44.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["16.0", "45.0", "51.0", "60.0", "61.0"]}, {"sku": "61036304.0", "desc": "LSS Carbon Absorb 45g", "fisico": 7839.0, "sistema": 7839.0, "absdiff": 0, "conteos": 28, "con_diff": 0, "sin_diff": 28, "ira": 100.0, "abc": "A", "pct_acum": 45.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["1.0", "12.0", "22.0", "23.0", "25.0"]}, {"sku": "BR03892A", "desc": "Jab PROTEX Avena 3Paq 85gr", "fisico": 7776.0, "sistema": 7776.0, "absdiff": 1.0, "conteos": 75, "con_diff": 1, "sin_diff": 74, "ira": 98.7, "abc": "A", "pct_acum": 45.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["35.0", "9.0", "BBB", "CCC", "DDD"]}, {"sku": "61047779.0", "desc": "CTBM PRO CUIDADO CHARCOAL 2PK_LATAM\u00a824", "fisico": 7635.0, "sistema": 7635.0, "absdiff": 0, "conteos": 25, "con_diff": 0, "sin_diff": 25, "ira": 100.0, "abc": "A", "pct_acum": 46.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "EEE", "FFF", "III", "JJJ"]}, {"sku": "MX06116A", "desc": "CD CLGTE MAX WHITE Crystal Mint 75ML", "fisico": 7125.0, "sistema": 7125.0, "absdiff": 0, "conteos": 147, "con_diff": 0, "sin_diff": 147, "ira": 100.0, "abc": "A", "pct_acum": 47.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "EEE", "FFF", "GGG"]}, {"sku": "61005961.0", "desc": "TBM COLGATE Zig Zag Charcoal 3PK LA 36", "fisico": 7090.0, "sistema": 7090.0, "absdiff": 0, "conteos": 40, "con_diff": 0, "sin_diff": 40, "ira": 100.0, "abc": "A", "pct_acum": 48.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["22.0", "DDD", "FFF", "GGG", "HHH"]}, {"sku": "61024517.0", "desc": "ELMEX SENSITIVE 110G 3306, 10.00", "fisico": 6986.0, "sistema": 6986.0, "absdiff": 0, "conteos": 106, "con_diff": 0, "sin_diff": 106, "ira": 100.0, "abc": "A", "pct_acum": 48.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["1.0", "3.0", "BBB", "CCC", "DDD"]}, {"sku": "61047783.0", "desc": "CTBM PRO CUIDADO SENSITIVE 2PK_LATAM*24", "fisico": 6694.0, "sistema": 6694.0, "absdiff": 10.0, "conteos": 27, "con_diff": 2, "sin_diff": 25, "ira": 92.6, "abc": "A", "pct_acum": 49.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["26.0", "EEE", "FFF", "HHH", "III"]}, {"sku": "MX03163A", "desc": "CD COLGATE TrAcc Ext Blac Paq 3x75ml", "fisico": 6614.0, "sistema": 6614.0, "absdiff": 0, "conteos": 133, "con_diff": 0, "sin_diff": 133, "ira": 100.0, "abc": "A", "pct_acum": 50.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["49.0", "71.0", "BBB", "CCC", "DDD"]}, {"sku": "61040906.0", "desc": "CTBM TWISTER BASE M 2PK + LATAM*72", "fisico": 6610.0, "sistema": 6610.0, "absdiff": 0, "conteos": 89, "con_diff": 0, "sin_diff": 89, "ira": 100.0, "abc": "A", "pct_acum": 50.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["21.0", "33.0", "36.0", "50.0", "56.0"]}, {"sku": "FUS01554", "desc": "Deo MENNEN LSS Dble Defse Gel AFr 65gr", "fisico": 6287.0, "sistema": 6288.0, "absdiff": 0, "conteos": 38, "con_diff": 0, "sin_diff": 38, "ira": 100.0, "abc": "A", "pct_acum": 51.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["52.0", "53.0", "84.0", "BBB", "CCC"]}, {"sku": "61054539.0", "desc": "DEO LSS 24/7 PRO5 STICK 45GR", "fisico": 6189.0, "sistema": 6189.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "A", "pct_acum": 52.1, "meses": ["2026-05", "2026-06"], "estantes": ["BBB", "KKK", "LLL"]}, {"sku": "61002232.0", "desc": "CD COLGATE Total Tartar Control 90gr", "fisico": 6036.0, "sistema": 6036.0, "absdiff": 0, "conteos": 88, "con_diff": 0, "sin_diff": 88, "ira": 100.0, "abc": "A", "pct_acum": 52.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "FFF", "HHH", "III", "JJJ"]}, {"sku": "61000474.0", "desc": "Cep Den COLG Tri Act 4 Paq", "fisico": 5997.0, "sistema": 5997.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "A", "pct_acum": 53.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["55.0", "CCC", "EEE", "FFF", "GGG"]}, {"sku": "US00193A", "desc": "Deo LSS Powder Fresh Bar 45gr", "fisico": 5680.0, "sistema": 5678.0, "absdiff": 1.0, "conteos": 24, "con_diff": 1, "sin_diff": 23, "ira": 95.8, "abc": "A", "pct_acum": 53.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "III", "JJJ"]}, {"sku": "61041163.0", "desc": "CTBM TWISTER BASE S 2PK + LATAMX72", "fisico": 5635.0, "sistema": 5635.0, "absdiff": 0, "conteos": 75, "con_diff": 0, "sin_diff": 75, "ira": 100.0, "abc": "A", "pct_acum": 54.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["23.0", "24.0", "27.0", "52.0", "53.0"]}, {"sku": "61004945.0", "desc": "TB COLG ZigZag Charcoal Tira LA72", "fisico": 5616.0, "sistema": 5616.0, "absdiff": 0, "conteos": 76, "con_diff": 0, "sin_diff": 76, "ira": 100.0, "abc": "A", "pct_acum": 55.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["12.0", "13.0", "17.0", "18.0", "84.0"]}, {"sku": "FCL54311", "desc": "CD COLGATE TrAcc 75mL 12Pack", "fisico": 5570.0, "sistema": 5570.0, "absdiff": 0, "conteos": 108, "con_diff": 0, "sin_diff": 108, "ira": 100.0, "abc": "A", "pct_acum": 55.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["21.0", "31.0", "BBB", "CCC", "CON"]}, {"sku": "61044087.0", "desc": "61044087.0", "fisico": 5422.0, "sistema": 5422.0, "absdiff": 0, "conteos": 35, "con_diff": 0, "sin_diff": 35, "ira": 100.0, "abc": "A", "pct_acum": 56.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["41.0", "42.0", "82.0", "83.0", "BBB"]}, {"sku": "61056839.0", "desc": "LSS 2 PACK BARRA INVISIBLE FLORAL 45G", "fisico": 5315.0, "sistema": 5315.0, "absdiff": 0, "conteos": 39, "con_diff": 0, "sin_diff": 39, "ira": 100.0, "abc": "A", "pct_acum": 56.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["85.0", "BBB", "CCC", "DDD", "EEE"]}, {"sku": "FUS90757", "desc": "Deo SS Classic AP 50gr", "fisico": 5309.0, "sistema": 5309.0, "absdiff": 0, "conteos": 24, "con_diff": 0, "sin_diff": 24, "ira": 100.0, "abc": "A", "pct_acum": 57.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["65.0", "8.0", "BBB", "FFF", "GGG"]}, {"sku": "BR03803A", "desc": "CD COLGATE Lumin Whte Brilliant 90gr", "fisico": 5281.0, "sistema": 5281.0, "absdiff": 0, "conteos": 80, "con_diff": 0, "sin_diff": 80, "ira": 100.0, "abc": "A", "pct_acum": 57.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["63.0", "83.0", "BBB", "CCC", "DDD"]}, {"sku": "61046923.0", "desc": "TB COLG EXTRA_CLEAN FH M 2PK", "fisico": 5147.0, "sistema": 5147.0, "absdiff": 0, "conteos": 22, "con_diff": 0, "sin_diff": 22, "ira": 100.0, "abc": "A", "pct_acum": 58.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "HHH", "KKK", "LLL"]}, {"sku": "61054544.0", "desc": "DEO SS STAINGUARD STICK 50GR", "fisico": 5080.0, "sistema": 5078.0, "absdiff": 0, "conteos": 25, "con_diff": 0, "sin_diff": 25, "ira": 100.0, "abc": "A", "pct_acum": 58.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "FFF", "HHH", "JJJ"]}, {"sku": "61051702.0", "desc": "61051702.0", "fisico": 5069.0, "sistema": 5069.0, "absdiff": 0, "conteos": 30, "con_diff": 0, "sin_diff": 30, "ira": 100.0, "abc": "A", "pct_acum": 59.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["14.0", "BBB", "CCC", "EEE", "FFF"]}, {"sku": "61039498.0", "desc": "DEO MSS CARBON ABSORB 50G 2PK", "fisico": 5067.0, "sistema": 5067.0, "absdiff": 0, "conteos": 43, "con_diff": 0, "sin_diff": 43, "ira": 100.0, "abc": "A", "pct_acum": 59.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["14.0", "26.0", "75.0", "EEE", "GGG"]}, {"sku": "FCN05515A", "desc": "Cep Den COLGATE 360 Lumin FH Med 2x1", "fisico": 4871.0, "sistema": 4871.0, "absdiff": 0, "conteos": 30, "con_diff": 0, "sin_diff": 30, "ira": 100.0, "abc": "A", "pct_acum": 60.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "DDD", "EEE", "FFF", "III"]}, {"sku": "BR04262A", "desc": "Enj COLG Plax Ice Infinity 5+180ml", "fisico": 4656.0, "sistema": 4651.0, "absdiff": 0, "conteos": 72, "con_diff": 0, "sin_diff": 72, "ira": 100.0, "abc": "A", "pct_acum": 60.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["29.0", "39.0", "58.0", "60.0", "BBB"]}, {"sku": "61054375.0", "desc": "61054375.0", "fisico": 4504.0, "sistema": 4504.0, "absdiff": 0, "conteos": 97, "con_diff": 0, "sin_diff": 97, "ira": 100.0, "abc": "A", "pct_acum": 61.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["46.0", "BBB", "CCC", "DDD", "EEE"]}, {"sku": "BR02397A", "desc": "BW PROTEX Intimate Fresh  200ml", "fisico": 4421.0, "sistema": 4421.0, "absdiff": 0, "conteos": 18, "con_diff": 0, "sin_diff": 18, "ira": 100.0, "abc": "A", "pct_acum": 61.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH", "KKK", "LLL"]}, {"sku": "61034010.0", "desc": "Cep Den COLGATE 360 Med Twin pck", "fisico": 4392.0, "sistema": 4394.0, "absdiff": 0, "conteos": 21, "con_diff": 0, "sin_diff": 21, "ira": 100.0, "abc": "A", "pct_acum": 62.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "EEE", "GGG", "III"]}, {"sku": "FUS90892A", "desc": "Deo MENNEN LSS Inv Floral 45gr", "fisico": 4359.0, "sistema": 4366.0, "absdiff": 17.0, "conteos": 19, "con_diff": 3, "sin_diff": 16, "ira": 84.2, "abc": "A", "pct_acum": 62.5, "meses": ["2026-04", "2026-06"], "estantes": ["GGG", "III"]}, {"sku": "61008659.0", "desc": "Cep Den Col Smiles Teen Titans 6+ 1un", "fisico": 4295.0, "sistema": 4295.0, "absdiff": 0, "conteos": 21, "con_diff": 0, "sin_diff": 21, "ira": 100.0, "abc": "A", "pct_acum": 63.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["47.0", "BBB", "CCC", "FFF", "HHH"]}, {"sku": "FUS02915", "desc": "DEO LSS DBLE DEFSE FLORAL FRESH GEL 65GR", "fisico": 4266.0, "sistema": 4266.0, "absdiff": 0, "conteos": 21, "con_diff": 0, "sin_diff": 21, "ira": 100.0, "abc": "A", "pct_acum": 63.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["64.0", "76.0", "84.0", "BBB", "DDD"]}, {"sku": "61000299.0", "desc": "Deo MSS Naturals Carbon Bar 76gr", "fisico": 4194.0, "sistema": 4193.0, "absdiff": 0, "conteos": 24, "con_diff": 0, "sin_diff": 24, "ira": 100.0, "abc": "A", "pct_acum": 63.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "HHH", "LLL"]}, {"sku": "FBR13461B", "desc": "TP COLGATE MPA 180GR", "fisico": 4148.0, "sistema": 4148.0, "absdiff": 2.0, "conteos": 123, "con_diff": 1, "sin_diff": 122, "ira": 99.2, "abc": "A", "pct_acum": 64.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["34.0", "62.0", "76.0", "78.0", "85.0"]}, {"sku": "CL00551A", "desc": "CD COLGATE Ultra Blanco 3x2 90gr", "fisico": 3916.0, "sistema": 3935.0, "absdiff": 0, "conteos": 100, "con_diff": 0, "sin_diff": 100, "ira": 100.0, "abc": "A", "pct_acum": 64.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "EEE", "FFF", "GGG"]}, {"sku": "61051703.0", "desc": "DEO MSS CLINICAL DRY TUBE 70 GR", "fisico": 3853.0, "sistema": 3852.0, "absdiff": 0, "conteos": 23, "con_diff": 0, "sin_diff": 23, "ira": 100.0, "abc": "A", "pct_acum": 65.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "FFF", "GGG", "III"]}, {"sku": "MX01782A", "desc": "Gel Dent COLGATE Smiles Barbie 75ml", "fisico": 3723.0, "sistema": 3723.0, "absdiff": 1.0, "conteos": 27, "con_diff": 1, "sin_diff": 26, "ira": 96.3, "abc": "A", "pct_acum": 65.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "HHH", "JJJ", "KKK"]}, {"sku": "61054374.0", "desc": "CR DEN COLGATE TOTAL ORIGINAL MINT 75ML", "fisico": 3716.0, "sistema": 3716.0, "absdiff": 0, "conteos": 67, "con_diff": 0, "sin_diff": 67, "ira": 100.0, "abc": "A", "pct_acum": 65.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["45.0", "57.0", "59.0", "61.0", "62.0"]}, {"sku": "61044075.0", "desc": "CTBM Slimsoft Charcoal CHS 3PK_Latam 36", "fisico": 3715.0, "sistema": 3715.0, "absdiff": 0, "conteos": 22, "con_diff": 0, "sin_diff": 22, "ira": 100.0, "abc": "A", "pct_acum": 66.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "EEE", "FFF", "GGG", "KKK"]}, {"sku": "US00066B", "desc": "Deo MSS Xtreme Ultra Gel 85gr", "fisico": 3663.0, "sistema": 3663.0, "absdiff": 1.0, "conteos": 21, "con_diff": 1, "sin_diff": 20, "ira": 95.2, "abc": "A", "pct_acum": 66.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["50.0", "62.0", "63.0", "68.0", "71.0"]}, {"sku": "61055670.0", "desc": "Elmex Sensitive Professional 1PK_LA 12", "fisico": 3645.0, "sistema": 3645.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "A", "pct_acum": 66.9, "meses": ["2026-05"], "estantes": ["DDD", "FFF"]}, {"sku": "61051331.0", "desc": "61051331.0", "fisico": 3639.0, "sistema": 3639.0, "absdiff": 0, "conteos": 35, "con_diff": 0, "sin_diff": 35, "ira": 100.0, "abc": "A", "pct_acum": 67.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["FFF", "HHH", "III", "JJJ", "KKK"]}, {"sku": "61055639.0", "desc": "KIDS SMILES SABER BUBBLE FRUIT 75 MX 100G", "fisico": 3634.0, "sistema": 3634.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "A", "pct_acum": 67.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "KKK"]}, {"sku": "61056850.0", "desc": "CTBM Smiles Harry Potter Kids + 6 2PK_LA", "fisico": 3627.0, "sistema": 3627.0, "absdiff": 5.0, "conteos": 17, "con_diff": 1, "sin_diff": 16, "ira": 94.1, "abc": "A", "pct_acum": 68.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "FFF", "HHH", "III", "KKK"]}, {"sku": "MX06115A", "desc": "CD CLGTE Max White 3 x 75ml", "fisico": 3614.0, "sistema": 3613.0, "absdiff": 1.0, "conteos": 72, "con_diff": 1, "sin_diff": 71, "ira": 98.6, "abc": "A", "pct_acum": 68.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["11.0", "19.0", "30.0", "4.0", "58.0"]}, {"sku": "FCN54300", "desc": "Cep Den DENTO  Ninos Ext Suav 2x1", "fisico": 3569.0, "sistema": 3569.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "A", "pct_acum": 68.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "FFF", "HHH", "JJJ"]}, {"sku": "61046311.0", "desc": "TP HELLO CHARCOAL FLUORIDE FREE 113G", "fisico": 3565.0, "sistema": 3565.0, "absdiff": 0, "conteos": 23, "con_diff": 0, "sin_diff": 23, "ira": 100.0, "abc": "A", "pct_acum": 69.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["FFF", "KKK", "LLL"]}, {"sku": "FUS00447A", "desc": "Deo MENNEN LSS Wild Fressia 45gr", "fisico": 3541.0, "sistema": 3542.0, "absdiff": 4.0, "conteos": 15, "con_diff": 3, "sin_diff": 12, "ira": 80.0, "abc": "A", "pct_acum": 69.4, "meses": ["2026-04", "2026-06"], "estantes": ["CCC", "GGG", "HHH", "KKK"]}, {"sku": "61041410.0", "desc": "ELMEX ANTICAR", "fisico": 3502.0, "sistema": 3502.0, "absdiff": 0, "conteos": 59, "con_diff": 0, "sin_diff": 59, "ira": 100.0, "abc": "A", "pct_acum": 69.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["60.0", "66.0", "69.0", "70.0", "GGG"]}, {"sku": "61024546.0", "desc": "MW COLGATE PLAX ODOR CONTROL", "fisico": 3468.0, "sistema": 3468.0, "absdiff": 0, "conteos": 49, "con_diff": 0, "sin_diff": 49, "ira": 100.0, "abc": "A", "pct_acum": 70.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["10.0", "11.0", "26.0", "3.0", "34.0"]}, {"sku": "61000253.0", "desc": "CTBM Smiles Minion 6 mas 2paq", "fisico": 3468.0, "sistema": 3468.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "A", "pct_acum": 70.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "HHH", "KKK", "LLL"]}, {"sku": "61046310.0", "desc": "HELLO KIDS UNICORN SBGUM FLRD TP 12/88ML", "fisico": 3389.0, "sistema": 3389.0, "absdiff": 4.0, "conteos": 28, "con_diff": 1, "sin_diff": 27, "ira": 96.4, "abc": "A", "pct_acum": 70.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "JJJ", "LLL"]}, {"sku": "0000000FMX04985", "desc": "CD COLGATE TrAcc Paq 2x150ml", "fisico": 3310.0, "sistema": 3310.0, "absdiff": 0, "conteos": 140, "con_diff": 0, "sin_diff": 140, "ira": 100.0, "abc": "A", "pct_acum": 71.1, "meses": ["2026-05"], "estantes": ["BBB", "BN", "CCC", "CON", "DDD"]}, {"sku": "61047891.0", "desc": "CTBM GUM RENEWAL CH S 2PK", "fisico": 3267.0, "sistema": 3267.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "A", "pct_acum": 71.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "EEE", "III", "KKK", "LLL"]}, {"sku": "BR02396A", "desc": "BW PROTEX Intimate Delic 200ml", "fisico": 3264.0, "sistema": 3263.0, "absdiff": 1.0, "conteos": 14, "con_diff": 1, "sin_diff": 13, "ira": 92.9, "abc": "A", "pct_acum": 71.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["39.0", "EEE", "HHH"]}, {"sku": "61054672.0", "desc": "LA MSS ENERGY 50G", "fisico": 3215.0, "sistema": 3215.0, "absdiff": 0, "conteos": 9, "con_diff": 0, "sin_diff": 9, "ira": 100.0, "abc": "A", "pct_acum": 72.1, "meses": ["2026-05", "2026-06"], "estantes": ["46.0", "68.0", "73.0", "BBB", "DDD"]}, {"sku": "61030943.0", "desc": "Enj Buc COLGATE Tot Cln Mnt 1L", "fisico": 3182.0, "sistema": 3102.0, "absdiff": 0, "conteos": 45, "con_diff": 0, "sin_diff": 45, "ira": 100.0, "abc": "A", "pct_acum": 72.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["27.0", "29.0", "35.0", "DDD", "EEE"]}, {"sku": "61044812.0", "desc": "CTBM Total Whitening Restore Soft 2PK_LA", "fisico": 3172.0, "sistema": 3172.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "A", "pct_acum": 72.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "FFF", "HHH", "JJJ", "KKK"]}, {"sku": "61018998.0", "desc": "Jabon PROTEX ALOE 3X90g", "fisico": 3130.0, "sistema": 3133.0, "absdiff": 0, "conteos": 55, "con_diff": 0, "sin_diff": 55, "ira": 100.0, "abc": "A", "pct_acum": 73.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["11.0", "37.0", "44.0", "80.0", "81.0"]}, {"sku": "CN07296A", "desc": "CTBM Smiles Barbie 6+ 2P_LA*24", "fisico": 3103.0, "sistema": 3103.0, "absdiff": 0, "conteos": 21, "con_diff": 0, "sin_diff": 21, "ira": 100.0, "abc": "A", "pct_acum": 73.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["24.0", "45.0", "CCC", "DDD", "EEE"]}, {"sku": "61018996.0", "desc": "Jabon PROTEX Deep Cleaning 3x90g", "fisico": 3057.0, "sistema": 3057.0, "absdiff": 0, "conteos": 59, "con_diff": 0, "sin_diff": 59, "ira": 100.0, "abc": "A", "pct_acum": 73.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "GGG", "HHH", "JJJ", "KKK"]}, {"sku": "BR03582A", "desc": "Cep Den COLGATE ProCuidadoCabCompac 4Paq", "fisico": 3002.0, "sistema": 3002.0, "absdiff": 3.0, "conteos": 22, "con_diff": 1, "sin_diff": 21, "ira": 95.5, "abc": "A", "pct_acum": 74.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "GGG", "HHH"]}, {"sku": "FMX04531", "desc": "Deo MSS Xtreme Ultra Bar 50gr", "fisico": 2957.0, "sistema": 2956.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "A", "pct_acum": 74.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["FFF", "HHH", "III"]}, {"sku": "FUS04682", "desc": "Deo SS Stainguard Bar 50gr", "fisico": 2915.0, "sistema": 2916.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "A", "pct_acum": 74.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["JJJ", "LLL"]}, {"sku": "61044810.0", "desc": "CTBM Total Foaming Clean Soft 1PK_LA 12", "fisico": 2902.0, "sistema": 2902.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "A", "pct_acum": 74.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "JJJ", "KKK"]}, {"sku": "61020081.0", "desc": "Cep Den COLGATE Premier Cln 14x12", "fisico": 2894.0, "sistema": 2894.0, "absdiff": 0, "conteos": 33, "con_diff": 0, "sin_diff": 33, "ira": 100.0, "abc": "A", "pct_acum": 75.2, "meses": ["2026-04", "2026-06"], "estantes": ["BBB", "GGG", "HHH", "KKK"]}, {"sku": "61030770.0", "desc": "CD COLG Kids Teen Titans Go 60g", "fisico": 2892.0, "sistema": 2892.0, "absdiff": 0, "conteos": 47, "con_diff": 0, "sin_diff": 47, "ira": 100.0, "abc": "A", "pct_acum": 75.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "HHH"]}, {"sku": "61000387.0", "desc": "Cep Den COLGATE Smiles 0a2 anos", "fisico": 2865.0, "sistema": 2865.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "A", "pct_acum": 75.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["55.0", "CCC", "DDD", "GGG", "HHH"]}, {"sku": "61016323.0", "desc": "MW COLG LW Charcoal 1L", "fisico": 2829.0, "sistema": 2832.0, "absdiff": 4.0, "conteos": 40, "con_diff": 4, "sin_diff": 36, "ira": 90.0, "abc": "A", "pct_acum": 76.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["27.0", "37.0", "CCC", "DDD", "FFF"]}, {"sku": "FUS05643", "desc": "Deo MSS ADN Gel 85gr", "fisico": 2818.0, "sistema": 2818.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "A", "pct_acum": 76.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["58.0", "68.0", "73.0", "83.0", "CCC"]}, {"sku": "61047888.0", "desc": "CTBM GUM RENEWAL CHARCOAL FH S 2PK_LA*24", "fisico": 2806.0, "sistema": 2806.0, "absdiff": 0, "conteos": 49, "con_diff": 0, "sin_diff": 49, "ira": 100.0, "abc": "A", "pct_acum": 76.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH", "III", "JJJ"]}, {"sku": "61000240.0", "desc": "CTBM Bamboo Charcoal Single", "fisico": 2791.0, "sistema": 2791.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "A", "pct_acum": 76.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "FFF", "JJJ", "LLL"]}, {"sku": "61018994.0", "desc": "Jabon PROTEX Oats 125g", "fisico": 2778.0, "sistema": 2778.0, "absdiff": 0, "conteos": 43, "con_diff": 0, "sin_diff": 43, "ira": 100.0, "abc": "A", "pct_acum": 77.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "HHH"]}, {"sku": "61054724.0", "desc": "CTBM Luminous White RL 2PK_Latam_24", "fisico": 2733.0, "sistema": 2733.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "A", "pct_acum": 77.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["83.0", "DDD", "EEE", "HHH", "III"]}, {"sku": "61004189.0", "desc": "TP COLGATE TRIPLE ACCION XTRA WHITE", "fisico": 2716.0, "sistema": 2716.0, "absdiff": 0, "conteos": 76, "con_diff": 0, "sin_diff": 76, "ira": 100.0, "abc": "A", "pct_acum": 77.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["13.0", "14.0", "15.0", "19.0", "20.0"]}, {"sku": "MX03145A", "desc": "Deo MSS Fresh Bar 2x60gr", "fisico": 2701.0, "sistema": 2701.0, "absdiff": 0, "conteos": 26, "con_diff": 0, "sin_diff": 26, "ira": 100.0, "abc": "A", "pct_acum": 78.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "HHH"]}, {"sku": "61001321.0", "desc": "CD COLGATE Smiles Justice League 75ml", "fisico": 2698.0, "sistema": 2698.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "A", "pct_acum": 78.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "HHH"]}, {"sku": "61056173.0", "desc": "TP COLGATE TOTH ORIG MNT PCK 3*75ML", "fisico": 2686.0, "sistema": 2688.0, "absdiff": 0, "conteos": 67, "con_diff": 0, "sin_diff": 67, "ira": 100.0, "abc": "A", "pct_acum": 78.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["65.0", "BBB", "CCC", "DDD", "EEE"]}, {"sku": "61020815.0", "desc": "BS PROTEX Omega 3 125g", "fisico": 2636.0, "sistema": 2634.0, "absdiff": 0, "conteos": 37, "con_diff": 0, "sin_diff": 37, "ira": 100.0, "abc": "A", "pct_acum": 78.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "GGG"]}, {"sku": "61009188.0", "desc": "61009188.0", "fisico": 2618.0, "sistema": 2617.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "A", "pct_acum": 79.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "FFF", "KKK"]}, {"sku": "61058151.0", "desc": "COLGATE TOTAL PREVENCION ACTIVA 75ML", "fisico": 2575.0, "sistema": 2575.0, "absdiff": 0, "conteos": 43, "con_diff": 0, "sin_diff": 43, "ira": 100.0, "abc": "A", "pct_acum": 79.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["18.0", "20.0", "22.0", "28.0", "29.0"]}, {"sku": "61027742.0", "desc": "LSS CLINICAL PROTECT AND CLARIFY 55", "fisico": 2572.0, "sistema": 2572.0, "absdiff": 214.0, "conteos": 21, "con_diff": 1, "sin_diff": 20, "ira": 95.2, "abc": "A", "pct_acum": 79.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "EEE", "HHH", "LLL"]}, {"sku": "FMX03180C", "desc": "CD COLGATE TrAcc 100ml", "fisico": 2554.0, "sistema": 2554.0, "absdiff": 0, "conteos": 65, "con_diff": 0, "sin_diff": 65, "ira": 100.0, "abc": "A", "pct_acum": 79.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["1.0", "18.0", "20.0", "3.0", "36.0"]}, {"sku": "61010272.0", "desc": "Cep Den COLGATE TrAcc 1pz", "fisico": 2521.0, "sistema": 2521.0, "absdiff": 0, "conteos": 24, "con_diff": 0, "sin_diff": 24, "ira": 100.0, "abc": "B", "pct_acum": 80.1, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "MX03064A", "desc": "Deo LSS Clinical Comp Powder PLE Bar45gr", "fisico": 2517.0, "sistema": 2517.0, "absdiff": 0, "conteos": 18, "con_diff": 0, "sin_diff": 18, "ira": 100.0, "abc": "B", "pct_acum": 80.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "HHH", "JJJ"]}, {"sku": "61058757.0", "desc": "PD Colgate Ultrablanco 90g", "fisico": 2511.0, "sistema": 2511.0, "absdiff": 0, "conteos": 63, "con_diff": 0, "sin_diff": 63, "ira": 100.0, "abc": "B", "pct_acum": 80.6, "meses": ["2026-05", "2026-06"], "estantes": ["80.0", "86.0", "BBB", "CCC", "DDD"]}, {"sku": "61047893.0", "desc": "CTBM GUMMY SENSITIVE 1PK_LA*12", "fisico": 2504.0, "sistema": 2504.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "B", "pct_acum": 80.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "FFF", "HHH"]}, {"sku": "FCN54303", "desc": "Cep Den DENTO  Tweens Suav 2x1", "fisico": 2485.0, "sistema": 2485.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "B", "pct_acum": 81.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "FFF", "JJJ", "KKK", "LLL"]}, {"sku": "61054670.0", "desc": "DEO MENNEN LSS INV FLO SP 45G", "fisico": 2478.0, "sistema": 2478.0, "absdiff": 0, "conteos": 9, "con_diff": 0, "sin_diff": 9, "ira": 100.0, "abc": "B", "pct_acum": 81.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["50.0", "51.0", "53.0", "54.0", "57.0"]}, {"sku": "61044086.0", "desc": "ELMEX SENSITIVE PROFESSIONAL 1PK_LA*12", "fisico": 2471.0, "sistema": 2471.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "B", "pct_acum": 81.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "HHH"]}, {"sku": "61044073.0", "desc": "CTBM SlimSoft Charcoal CHS 1PK_Latam 12", "fisico": 2392.0, "sistema": 2392.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "B", "pct_acum": 81.8, "meses": ["2026-04", "2026-05"], "estantes": ["79.0", "DDD", "HHH", "KKK"]}, {"sku": "CN06547A", "desc": "Cep Den COLGATE Ext Cln 3pack", "fisico": 2376.0, "sistema": 2376.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "B", "pct_acum": 82.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["III", "JJJ", "KKK"]}, {"sku": "FMX04985", "desc": "CD COLGATE TrAcc Paq 2x150ml", "fisico": 2344.0, "sistema": 2344.0, "absdiff": 51.0, "conteos": 102, "con_diff": 2, "sin_diff": 100, "ira": 98.0, "abc": "B", "pct_acum": 82.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "GGG", "HHH"]}, {"sku": "61014107.0", "desc": "61014107.0", "fisico": 2330.0, "sistema": 2330.0, "absdiff": 0, "conteos": 15, "con_diff": 0, "sin_diff": 15, "ira": 100.0, "abc": "B", "pct_acum": 82.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "EEE", "FFF", "HHH"]}, {"sku": "MX03004A", "desc": "0000000MX03004A", "fisico": 2328.0, "sistema": 2328.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "B", "pct_acum": 82.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "FFF", "HHH", "III"]}, {"sku": "61030758.0", "desc": "Gel Dent COLGATE Kids Strawberry 50g", "fisico": 2297.0, "sistema": 2296.0, "absdiff": 0, "conteos": 38, "con_diff": 0, "sin_diff": 38, "ira": 100.0, "abc": "B", "pct_acum": 83.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "FFF", "III"]}, {"sku": "61002905.0", "desc": "CTBM SlimSoft Charcoal CHS 4PK_LA 48", "fisico": 2282.0, "sistema": 2282.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "B", "pct_acum": 83.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "DDD", "EEE", "HHH", "JJJ"]}, {"sku": "61024300.0", "desc": "DEO MSS Fresh Stick 4 pack", "fisico": 2264.0, "sistema": 2264.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "B", "pct_acum": 83.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["31.0", "FFF", "GGG", "HHH"]}, {"sku": "61018995.0", "desc": "Jabon PROTEX Aloe 125g", "fisico": 2245.0, "sistema": 2245.0, "absdiff": 0, "conteos": 31, "con_diff": 0, "sin_diff": 31, "ira": 100.0, "abc": "B", "pct_acum": 83.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "GGG", "HHH", "JJJ"]}, {"sku": "US00427A", "desc": "Deo MSS Stress Defense Gel 85gr", "fisico": 2229.0, "sistema": 2229.0, "absdiff": 1.0, "conteos": 13, "con_diff": 1, "sin_diff": 12, "ira": 92.3, "abc": "B", "pct_acum": 83.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "HHH", "LLL"]}, {"sku": "MX06698A", "desc": "CD COLGATE Luminous White Charcoal 90g", "fisico": 2198.0, "sistema": 2197.0, "absdiff": 0, "conteos": 35, "con_diff": 0, "sin_diff": 35, "ira": 100.0, "abc": "B", "pct_acum": 84.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["80.0", "DDD", "FFF", "GGG", "HHH"]}, {"sku": "61014102.0", "desc": "AP/DEO MSS CLINICAL DRY CREAM BARRE", "fisico": 2182.0, "sistema": 2181.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "B", "pct_acum": 84.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["22.0", "23.0", "CCC", "DDD", "EEE"]}, {"sku": "61044811.0", "desc": "CTBM Total Foaming Clean Soft 2PK_LA 24", "fisico": 2163.0, "sistema": 2163.0, "absdiff": 0, "conteos": 15, "con_diff": 0, "sin_diff": 15, "ira": 100.0, "abc": "B", "pct_acum": 84.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "GGG", "KKK", "LLL"]}, {"sku": "61009196.0", "desc": "61009196.0", "fisico": 2132.0, "sistema": 2132.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "B", "pct_acum": 84.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "FFF", "III", "JJJ"]}, {"sku": "61008666.0", "desc": "CTBM New 100% Recycled CH S 2PK_LA", "fisico": 2111.0, "sistema": 2111.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "B", "pct_acum": 85.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["FFF", "HHH", "III", "KKK"]}, {"sku": "MX05541A", "desc": "LUMIN WHTE BRILLNTWHTE 2X75ML", "fisico": 2103.0, "sistema": 2103.0, "absdiff": 2.0, "conteos": 57, "con_diff": 2, "sin_diff": 55, "ira": 96.5, "abc": "B", "pct_acum": 85.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["54.0", "75.0", "DDD", "EEE", "FFF"]}, {"sku": "61054673.0", "desc": "DEO MSS 24/7 X5 STICK 50GR", "fisico": 2056.0, "sistema": 2056.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "B", "pct_acum": 85.4, "meses": ["2026-05", "2026-06"], "estantes": ["32.0", "48.0", "DDD", "JJJ", "LLL"]}, {"sku": "61055671.0", "desc": "Elmex Sensitive Professional 2PK_LA 24", "fisico": 2016.0, "sistema": 2016.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "B", "pct_acum": 85.6, "meses": ["2026-04", "2026-05"], "estantes": ["CCC", "DDD", "EEE"]}, {"sku": "CO01261A", "desc": "0000000CO01261A", "fisico": 1976.0, "sistema": 1976.0, "absdiff": 0, "conteos": 35, "con_diff": 0, "sin_diff": 35, "ira": 100.0, "abc": "B", "pct_acum": 85.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "KKK", "LLL"]}, {"sku": "61056594.0", "desc": "TP COLGATE TOTAL CHARCOAL 75 ML", "fisico": 1970.0, "sistema": 1970.0, "absdiff": 0, "conteos": 55, "con_diff": 0, "sin_diff": 55, "ira": 100.0, "abc": "B", "pct_acum": 86.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["21.0", "BBB", "CCC", "DDD", "GGG"]}, {"sku": "US07307A", "desc": "HELLO APW 4.7Z FF TP", "fisico": 1942.0, "sistema": 1942.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "B", "pct_acum": 86.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["80.0", "BBB", "CCC", "DDD", "FFF"]}, {"sku": "61039037.0", "desc": "CTBM PerioGard GUM Expert 1PK_LA", "fisico": 1921.0, "sistema": 1921.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "B", "pct_acum": 86.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "III", "KKK"]}, {"sku": "61030043.0", "desc": "Enj COLGATE Plax Agnes 250ml", "fisico": 1902.0, "sistema": 1900.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "B", "pct_acum": 86.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "DDD", "FFF", "HHH", "III"]}, {"sku": "61044077.0", "desc": "CTBM SlimSoft Color Rim CHS 2PK_LATAM 24", "fisico": 1882.0, "sistema": 1878.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "B", "pct_acum": 86.8, "meses": ["2026-04", "2026-06"], "estantes": ["GGG", "JJJ"]}, {"sku": "61050314.0", "desc": "61050314.0", "fisico": 1863.0, "sistema": 1863.0, "absdiff": 0, "conteos": 35, "con_diff": 0, "sin_diff": 35, "ira": 100.0, "abc": "B", "pct_acum": 87.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "DDD", "FFF", "HHH", "KKK"]}, {"sku": "CL00545A", "desc": "CD COLGATE Lumin Whte 3x90gr", "fisico": 1850.0, "sistema": 1850.0, "absdiff": 0, "conteos": 45, "con_diff": 0, "sin_diff": 45, "ira": 100.0, "abc": "B", "pct_acum": 87.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["64.0", "67.0", "70.0", "72.0", "74.0"]}, {"sku": "US03669A", "desc": "LSS Derma Omega 3 Barra 45GR", "fisico": 1849.0, "sistema": 1849.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "B", "pct_acum": 87.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["KKK", "LLL"]}, {"sku": "61059006.0", "desc": "PD COLGATE ULTRA BLANCO 3X90G", "fisico": 1816.0, "sistema": 1816.0, "absdiff": 0, "conteos": 47, "con_diff": 0, "sin_diff": 47, "ira": 100.0, "abc": "B", "pct_acum": 87.5, "meses": ["2026-05", "2026-06"], "estantes": ["17.0", "86.0", "BBB", "CCC", "DDD"]}, {"sku": "61038957.0", "desc": "TP COLGATE SENS IMMED PRO REL GUMS 110G", "fisico": 1813.0, "sistema": 1812.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "B", "pct_acum": 87.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "HHH", "III", "JJJ"]}, {"sku": "61029184.0", "desc": "Enj Buc COLGATE Plax Infty 1000ml", "fisico": 1747.0, "sistema": 1747.0, "absdiff": 0, "conteos": 28, "con_diff": 0, "sin_diff": 28, "ira": 100.0, "abc": "B", "pct_acum": 87.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["2.0", "59.0", "EEE", "FFF", "GGG"]}, {"sku": "61047894.0", "desc": "CTBM GUMMY SENSITIVE 2PK_LA*24", "fisico": 1743.0, "sistema": 1743.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "B", "pct_acum": 88.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["III", "KKK"]}, {"sku": "61014108.0", "desc": "61014108.0", "fisico": 1736.0, "sistema": 1736.0, "absdiff": 0, "conteos": 26, "con_diff": 0, "sin_diff": 26, "ira": 100.0, "abc": "B", "pct_acum": 88.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "EEE", "FFF", "HHH"]}, {"sku": "61054677.0", "desc": "DEO LSS AP STK FLORAL 45G", "fisico": 1735.0, "sistema": 1735.0, "absdiff": 0, "conteos": 6, "con_diff": 0, "sin_diff": 6, "ira": 100.0, "abc": "B", "pct_acum": 88.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "EEE", "HHH", "III", "KKK"]}, {"sku": "61030421.0", "desc": "JAB PO NAT KARITE Y VIT E 3X90G", "fisico": 1730.0, "sistema": 1713.0, "absdiff": 0, "conteos": 27, "con_diff": 0, "sin_diff": 27, "ira": 100.0, "abc": "B", "pct_acum": 88.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["61.0", "BBB", "CCC", "DDD", "EEE"]}, {"sku": "61007001.0", "desc": "61007001.0", "fisico": 1724.0, "sistema": 1724.0, "absdiff": 0, "conteos": 28, "con_diff": 0, "sin_diff": 28, "ira": 100.0, "abc": "B", "pct_acum": 88.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "III", "LLL"]}, {"sku": "61003149.0", "desc": "Enj Buc COLGATE Periogard s Alc 250ml", "fisico": 1714.0, "sistema": 1714.0, "absdiff": 1.0, "conteos": 25, "con_diff": 1, "sin_diff": 24, "ira": 96.0, "abc": "B", "pct_acum": 88.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["2.0", "BBB", "CCC", "DDD", "GGG"]}, {"sku": "FUS05281", "desc": "Deo MSS 24/7 X5 Gel 85gr", "fisico": 1710.0, "sistema": 1710.0, "absdiff": 0, "conteos": 15, "con_diff": 0, "sin_diff": 15, "ira": 100.0, "abc": "B", "pct_acum": 89.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["51.0", "58.0", "HHH", "LLL"]}, {"sku": "61038710.0", "desc": "TP COLG SENS IMMED PRO REL XTREME 110G", "fisico": 1696.0, "sistema": 1696.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "B", "pct_acum": 89.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "DDD", "GGG", "JJJ"]}, {"sku": "MX05375A", "desc": "CD COLGATE TrAcc Xtra Frsh 2x100ml", "fisico": 1682.0, "sistema": 1682.0, "absdiff": 0, "conteos": 46, "con_diff": 0, "sin_diff": 46, "ira": 100.0, "abc": "B", "pct_acum": 89.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["60.0", "GGG", "HHH", "III", "JJJ"]}, {"sku": "MX03139A", "desc": "LSS 2 PACK BARRA INVISIBLE FLORAL 45G", "fisico": 1605.0, "sistema": 1605.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "B", "pct_acum": 89.6, "meses": ["2026-04", "2026-06"], "estantes": ["GGG", "HHH", "KKK"]}, {"sku": "61046408.0", "desc": "CEP DEN COLGATE KIDS 5 C TANDY 2PAQ", "fisico": 1587.0, "sistema": 1587.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "B", "pct_acum": 89.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["33.0", "GGG", "JJJ"]}, {"sku": "61030423.0", "desc": "TS PO NAT RASPBERRY BLACBERRY", "fisico": 1584.0, "sistema": 1584.0, "absdiff": 0, "conteos": 25, "con_diff": 0, "sin_diff": 25, "ira": 100.0, "abc": "B", "pct_acum": 89.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "EEE", "GGG", "HHH"]}, {"sku": "61003172.0", "desc": "Enj Buc COLGATE Periogard s Alc 60ml", "fisico": 1546.0, "sistema": 1534.0, "absdiff": 0, "conteos": 29, "con_diff": 0, "sin_diff": 29, "ira": 100.0, "abc": "B", "pct_acum": 90.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "III", "JJJ", "LLL"]}, {"sku": "FMX05611", "desc": "CD COLGATE TrAcc Ext Blancura 125ml", "fisico": 1535.0, "sistema": 1535.0, "absdiff": 0, "conteos": 39, "con_diff": 0, "sin_diff": 39, "ira": 100.0, "abc": "B", "pct_acum": 90.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "HHH"]}, {"sku": "MX05532A", "desc": "CDC CLGTE LW Brilliant White 125 ml", "fisico": 1502.0, "sistema": 1503.0, "absdiff": 1.0, "conteos": 47, "con_diff": 1, "sin_diff": 46, "ira": 97.9, "abc": "B", "pct_acum": 90.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["86.0", "BBB", "CCC", "DDD", "EEE"]}, {"sku": "FMX05752", "desc": "Deo LSS 24/7 Pro 5 Roll On 50ml", "fisico": 1478.0, "sistema": 1478.0, "absdiff": 0, "conteos": 9, "con_diff": 0, "sin_diff": 9, "ira": 100.0, "abc": "B", "pct_acum": 90.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "III"]}, {"sku": "61000234.0", "desc": "CTBM SmilesBatmanyWonderWoman 6 2P LA 24", "fisico": 1467.0, "sistema": 1467.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "B", "pct_acum": 90.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["GGG", "HHH", "KKK"]}, {"sku": "61042878.0", "desc": "CD ELMEX ANTICARIES PROFESSIONAL 110G", "fisico": 1457.0, "sistema": 1457.0, "absdiff": 0, "conteos": 25, "con_diff": 0, "sin_diff": 25, "ira": 100.0, "abc": "B", "pct_acum": 90.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["73.0", "75.0", "77.0", "CCC", "GGG"]}, {"sku": "61030422.0", "desc": "Jab PO Naturals Carbon Act 3x90g", "fisico": 1444.0, "sistema": 1444.0, "absdiff": 0, "conteos": 23, "con_diff": 0, "sin_diff": 23, "ira": 100.0, "abc": "B", "pct_acum": 91.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["41.0", "DDD", "EEE", "GGG", "HHH"]}, {"sku": "61010274.0", "desc": "Cep Den COLG Dr Rabbit Single", "fisico": 1427.0, "sistema": 1427.0, "absdiff": 0, "conteos": 21, "con_diff": 0, "sin_diff": 21, "ira": 100.0, "abc": "B", "pct_acum": 91.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH", "III", "LLL"]}, {"sku": "61015020.0", "desc": "TB HELLO Carbon x1", "fisico": 1409.0, "sistema": 1409.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "B", "pct_acum": 91.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "HHH", "III", "KKK"]}, {"sku": "61058515.0", "desc": "CTBM Brilliant White 2PK S_LATAM 24", "fisico": 1408.0, "sistema": 1408.0, "absdiff": 0, "conteos": 4, "con_diff": 0, "sin_diff": 4, "ira": 100.0, "abc": "B", "pct_acum": 91.4, "meses": ["2026-05"], "estantes": ["81.0", "DDD", "EEE", "HHH"]}, {"sku": "61047062.0", "desc": "61047062.0", "fisico": 1402.0, "sistema": 1402.0, "absdiff": 0, "conteos": 26, "con_diff": 0, "sin_diff": 26, "ira": 100.0, "abc": "B", "pct_acum": 91.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH", "III", "JJJ", "KKK", "LLL"]}, {"sku": "MX03065A", "desc": "Deo MSS Clinical Complete Dry Bar 50gr", "fisico": 1388.0, "sistema": 1388.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "B", "pct_acum": 91.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["FFF", "KKK", "LLL"]}, {"sku": "61014902.0", "desc": "Hilo Den COLG Natural Ext Charcoal 25m", "fisico": 1371.0, "sistema": 1371.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "B", "pct_acum": 91.8, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61001976.0", "desc": "CD COLGATE Total Tartar Control 150ml", "fisico": 1367.0, "sistema": 1361.0, "absdiff": 0, "conteos": 64, "con_diff": 0, "sin_diff": 64, "ira": 100.0, "abc": "B", "pct_acum": 92.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["4.0", "8.0", "9.0", "CCC", "CON"]}, {"sku": "MX03188A", "desc": "0000000MX03188A", "fisico": 1359.0, "sistema": 1359.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "B", "pct_acum": 92.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "EEE", "III"]}, {"sku": "61042760.0", "desc": "TP COLG SSTVE IMM PRO RELIEF ORIG 110G", "fisico": 1353.0, "sistema": 1353.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "B", "pct_acum": 92.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "JJJ"]}, {"sku": "MX03109A", "desc": "CD COLGATE Smile Minions 6 c 75ml", "fisico": 1348.0, "sistema": 1348.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "B", "pct_acum": 92.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["FFF", "GGG", "KKK"]}, {"sku": "61057631.0", "desc": "Toothp-COL  TOT-InterDentalClean 90GR S1", "fisico": 1343.0, "sistema": 1343.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "B", "pct_acum": 92.5, "meses": ["2026-05", "2026-06"], "estantes": ["BBB", "DDD", "EEE", "HHH", "JJJ"]}, {"sku": "61018779.0", "desc": "Enj COLG Plax FrshMnt Antis\u00e9ptico 250ml", "fisico": 1296.0, "sistema": 1296.0, "absdiff": 2.0, "conteos": 16, "con_diff": 1, "sin_diff": 15, "ira": 93.8, "abc": "B", "pct_acum": 92.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "HHH", "III", "KKK"]}, {"sku": "61000247.0", "desc": "CTBM 360 Re CH S 2PK_LATAM*36", "fisico": 1281.0, "sistema": 1281.0, "absdiff": 0, "conteos": 12, "con_diff": 0, "sin_diff": 12, "ira": 100.0, "abc": "B", "pct_acum": 92.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "GGG", "KKK"]}, {"sku": "61042761.0", "desc": "TP CSPR IMM GENTLE FRESHNESS N WHIT 110G", "fisico": 1278.0, "sistema": 1278.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "B", "pct_acum": 92.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "III", "JJJ"]}, {"sku": "61041413.0", "desc": "ELMX MR SENSIVE 1X12X400MLB BZ/AR/CL", "fisico": 1269.0, "sistema": 1213.0, "absdiff": 0, "conteos": 45, "con_diff": 0, "sin_diff": 45, "ira": 100.0, "abc": "B", "pct_acum": 93.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["19.0", "33.0", "DDD", "III"]}, {"sku": "US07308A", "desc": "HELLO ACTVD CHARCOAL 4.0Z FF", "fisico": 1257.0, "sistema": 1257.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "B", "pct_acum": 93.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "61008926.0", "desc": "TBM COLG Bamboo Kids 1PK LATAM", "fisico": 1256.0, "sistema": 1256.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "B", "pct_acum": 93.3, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61052478.0", "desc": "TP COLGATE LW COLOR CORRECT 70G", "fisico": 1234.0, "sistema": 1234.0, "absdiff": 0, "conteos": 23, "con_diff": 0, "sin_diff": 23, "ira": 100.0, "abc": "B", "pct_acum": 93.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "EEE", "GGG", "HHH"]}, {"sku": "61046312.0", "desc": "HELLO NAT HLTHY WHTG 4.7Z FL TP", "fisico": 1215.0, "sistema": 1215.0, "absdiff": 0, "conteos": 12, "con_diff": 0, "sin_diff": 12, "ira": 100.0, "abc": "B", "pct_acum": 93.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "DDD", "HHH"]}, {"sku": "61054421.0", "desc": "TRV KIT MTB+TP TOTAL ORIGINAL MINT+MW", "fisico": 1214.0, "sistema": 1214.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "B", "pct_acum": 93.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "HHH", "III", "LLL"]}, {"sku": "FUS05754", "desc": "Deo LSS 24/7 Pro5 Bar 45gr", "fisico": 1197.0, "sistema": 1197.0, "absdiff": 0, "conteos": 11, "con_diff": 0, "sin_diff": 11, "ira": 100.0, "abc": "B", "pct_acum": 93.8, "meses": ["2026-04", "2026-06"], "estantes": ["CCC", "JJJ", "KKK"]}, {"sku": "61047778.0", "desc": "CTBM Pro Cuidado Charcoal 1PK_Latam 12", "fisico": 1176.0, "sistema": 1176.0, "absdiff": 0, "conteos": 3, "con_diff": 0, "sin_diff": 3, "ira": 100.0, "abc": "B", "pct_acum": 93.9, "meses": ["2026-05"], "estantes": ["DDD", "HHH"]}, {"sku": "61039889.0", "desc": "ENJBUC COLGATE LUM WHITE 500ML C 250MM", "fisico": 1173.0, "sistema": 1173.0, "absdiff": 35.0, "conteos": 28, "con_diff": 1, "sin_diff": 27, "ira": 96.4, "abc": "B", "pct_acum": 94.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["11.0", "9.0", "CCC", "GGG", "HHH"]}, {"sku": "61056605.0", "desc": "TP COLGATE TOTAL CARACOL 3X75 ML", "fisico": 1165.0, "sistema": 1165.0, "absdiff": 0, "conteos": 29, "con_diff": 0, "sin_diff": 29, "ira": 100.0, "abc": "B", "pct_acum": 94.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "FFF"]}, {"sku": "61035348.0", "desc": "JAB PALMOLIVE NUTRIMILK 4PACK 85G", "fisico": 1146.0, "sistema": 1146.0, "absdiff": 3.0, "conteos": 15, "con_diff": 1, "sin_diff": 14, "ira": 93.3, "abc": "B", "pct_acum": 94.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH", "KKK"]}, {"sku": "MX06729A", "desc": "CD COLGATE Luminous White Charcoal 125ml", "fisico": 1106.0, "sistema": 1106.0, "absdiff": 50.0, "conteos": 31, "con_diff": 1, "sin_diff": 30, "ira": 96.8, "abc": "B", "pct_acum": 94.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["69.0", "CCC", "DDD", "FFF", "GGG"]}, {"sku": "61047063.0", "desc": "61047063.0", "fisico": 1098.0, "sistema": 1098.0, "absdiff": 0, "conteos": 25, "con_diff": 0, "sin_diff": 25, "ira": 100.0, "abc": "B", "pct_acum": 94.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["24.0", "34.0", "37.0", "86.0", "BBB"]}, {"sku": "61053149.0", "desc": "61053149.0", "fisico": 1091.0, "sistema": 1085.0, "absdiff": 0, "conteos": 11, "con_diff": 0, "sin_diff": 11, "ira": 100.0, "abc": "B", "pct_acum": 94.6, "meses": ["2026-04", "2026-06"], "estantes": ["GGG", "HHH", "KKK"]}, {"sku": "61029489.0", "desc": "Enj Buc COLGATE Plax Ice 1l", "fisico": 1075.0, "sistema": 1074.0, "absdiff": 0, "conteos": 21, "con_diff": 0, "sin_diff": 21, "ira": 100.0, "abc": "B", "pct_acum": 94.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "FFF", "HHH", "III"]}, {"sku": "MX05086A", "desc": "CD COLGATE TrAcc Xtra Frsh 3x75ml", "fisico": 1074.0, "sistema": 1074.0, "absdiff": 0, "conteos": 27, "con_diff": 0, "sin_diff": 27, "ira": 100.0, "abc": "B", "pct_acum": 94.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["21.0", "44.0", "CCC", "EEE", "FFF"]}, {"sku": "FCL54223", "desc": "CD COLGATE TrAcc 50x6 PrEsp", "fisico": 1066.0, "sistema": 1066.0, "absdiff": 2.0, "conteos": 27, "con_diff": 1, "sin_diff": 26, "ira": 96.3, "abc": "B", "pct_acum": 94.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "FFF"]}, {"sku": "61056243.0", "desc": "BS PON Karite 4x85g", "fisico": 1062.0, "sistema": 1062.0, "absdiff": 0, "conteos": 12, "con_diff": 0, "sin_diff": 12, "ira": 100.0, "abc": "C", "pct_acum": 95.0, "meses": ["2026-05", "2026-06"], "estantes": ["3.0", "CCC", "EEE", "HHH", "III"]}, {"sku": "61046314.0", "desc": "TP HELLO ANTIPLAQUE 133G", "fisico": 1056.0, "sistema": 1056.0, "absdiff": 0, "conteos": 15, "con_diff": 0, "sin_diff": 15, "ira": 100.0, "abc": "C", "pct_acum": 95.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "HHH", "KKK", "LLL"]}, {"sku": "MX02550A", "desc": "Deo MSS 24/7 X5 Bar 50gr", "fisico": 1030.0, "sistema": 1030.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 95.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "HHH"]}, {"sku": "FBR13470B", "desc": "000000FBR13470B", "fisico": 1028.0, "sistema": 1027.0, "absdiff": 0, "conteos": 35, "con_diff": 0, "sin_diff": 35, "ira": 100.0, "abc": "C", "pct_acum": 95.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["10.0", "11.0", "17.0", "28.0", "32.0"]}, {"sku": "CO01823A", "desc": "DEO LSS CLINICAL PRACTITUBO 30G", "fisico": 1026.0, "sistema": 1026.0, "absdiff": 1.0, "conteos": 13, "con_diff": 1, "sin_diff": 12, "ira": 92.3, "abc": "C", "pct_acum": 95.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["III", "KKK"]}, {"sku": "61039029.0", "desc": "ENJ COLG PLAX FRSHMNT ANTISEPTICO 250 ML MAQ", "fisico": 1025.0, "sistema": 1025.0, "absdiff": 0, "conteos": 12, "con_diff": 0, "sin_diff": 12, "ira": 100.0, "abc": "C", "pct_acum": 95.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "III", "JJJ"]}, {"sku": "FCN31656", "desc": "Cep Den COLGATE Mx Whte TWINPaq NH Med", "fisico": 1021.0, "sistema": 1021.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 95.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH", "KKK"]}, {"sku": "61056541.0", "desc": "TP COLGATE TOTAL CHARCOAL 150 ML", "fisico": 973.0, "sistema": 973.0, "absdiff": 0, "conteos": 48, "con_diff": 0, "sin_diff": 48, "ira": 100.0, "abc": "C", "pct_acum": 95.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["68.0", "BBB", "CCC", "DDD", "EEE"]}, {"sku": "61046459.0", "desc": "TP COLGATE LW CHARCOAL 70GR 3PK", "fisico": 972.0, "sistema": 972.0, "absdiff": 0, "conteos": 27, "con_diff": 0, "sin_diff": 27, "ira": 100.0, "abc": "C", "pct_acum": 95.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["7.0", "CCC", "DDD", "EEE", "FFF"]}, {"sku": "61030106.0", "desc": "Cep Den Col Colors 5pq", "fisico": 964.0, "sistema": 964.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 95.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "JJJ"]}, {"sku": "61054546.0", "desc": "61054546.0", "fisico": 959.0, "sistema": 959.0, "absdiff": 0, "conteos": 3, "con_diff": 0, "sin_diff": 3, "ira": 100.0, "abc": "C", "pct_acum": 96.0, "meses": ["2026-05", "2026-06"], "estantes": ["26.0", "LLL"]}, {"sku": "MX05983A", "desc": "SG PO Nat Cherry & Coconut milk 390 ml", "fisico": 952.0, "sistema": 952.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "C", "pct_acum": 96.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "EEE", "III", "KKK"]}, {"sku": "61030902.0", "desc": "Enj Buc COLGATE Cln Mnt 250ml", "fisico": 940.0, "sistema": 938.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "C", "pct_acum": 96.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "III", "KKK", "LLL"]}, {"sku": "FMX05540", "desc": "DEO SS COOL NIGHT ROLL 30ML", "fisico": 921.0, "sistema": 921.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 96.3, "meses": ["2026-05", "2026-06"], "estantes": ["BBB", "DDD"]}, {"sku": "61039030.0", "desc": "COLG PLAX FRSH MNT 500MLX350ML", "fisico": 885.0, "sistema": 885.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "C", "pct_acum": 96.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "HHH", "III", "LLL"]}, {"sku": "61020814.0", "desc": "Jabon PROTEX Omega 3 3x90g", "fisico": 879.0, "sistema": 879.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "C", "pct_acum": 96.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "HHH"]}, {"sku": "61011324.0", "desc": "SG PO Natureza Secreta Pitaya 760ml", "fisico": 842.0, "sistema": 842.0, "absdiff": 0, "conteos": 22, "con_diff": 0, "sin_diff": 22, "ira": 100.0, "abc": "C", "pct_acum": 96.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "EEE", "FFF", "HHH"]}, {"sku": "61018793.0", "desc": "Enj COLG Plax Soft Mint 2L FKMB", "fisico": 835.0, "sistema": 835.0, "absdiff": 1.0, "conteos": 18, "con_diff": 1, "sin_diff": 17, "ira": 94.4, "abc": "C", "pct_acum": 96.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "FFF", "JJJ", "KKK", "LLL"]}, {"sku": "MX03580B", "desc": "CD COLGATE Tot Prof Enc\u00edas Salud 75ml", "fisico": 825.0, "sistema": 825.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "C", "pct_acum": 96.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["GGG", "HHH", "LLL"]}, {"sku": "61018775.0", "desc": "Enj COLG PlaxFrshMnt 500x350 Antis\u00e9ptico", "fisico": 813.0, "sistema": 813.0, "absdiff": 0, "conteos": 27, "con_diff": 0, "sin_diff": 27, "ira": 100.0, "abc": "C", "pct_acum": 96.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["15.0", "16.0", "BBB", "CCC", "DDD"]}, {"sku": "FMX05609", "desc": "TP CLGTE TRACC EXT WHITENING 75ML", "fisico": 799.0, "sistema": 799.0, "absdiff": 0, "conteos": 72, "con_diff": 0, "sin_diff": 72, "ira": 100.0, "abc": "C", "pct_acum": 96.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "HHH"]}, {"sku": "CO01822A", "desc": "DEO LSS CLINICAL PRACTITUBO 30G", "fisico": 781.0, "sistema": 781.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "C", "pct_acum": 97.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "EEE", "KKK"]}, {"sku": "MX06122A", "desc": "CD CLGTE MAX WHITE CRY MINT 180G", "fisico": 765.0, "sistema": 766.0, "absdiff": 0, "conteos": 21, "con_diff": 0, "sin_diff": 21, "ira": 100.0, "abc": "C", "pct_acum": 97.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["15.0", "BBB", "CCC", "FFF", "HHH"]}, {"sku": "61007005.0", "desc": "CDC Natural Ext Carb\u00f3n Atv 3 pck 90g", "fisico": 760.0, "sistema": 760.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "C", "pct_acum": 97.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "JJJ", "LLL"]}, {"sku": "CL00549A", "desc": "Gel Dent COLGATE Kids Frutilla 3Paq", "fisico": 759.0, "sistema": 758.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "C", "pct_acum": 97.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["FFF", "HHH", "JJJ", "KKK"]}, {"sku": "61011323.0", "desc": "SG PO Jazmin c Cocoa Butter 760ml", "fisico": 746.0, "sistema": 764.0, "absdiff": 0, "conteos": 21, "con_diff": 0, "sin_diff": 21, "ira": 100.0, "abc": "C", "pct_acum": 97.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "FFF", "JJJ"]}, {"sku": "61018683.0", "desc": "DF COLGATE 50m 2pack", "fisico": 732.0, "sistema": 732.0, "absdiff": 6.0, "conteos": 16, "con_diff": 1, "sin_diff": 15, "ira": 93.8, "abc": "C", "pct_acum": 97.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH", "III", "KKK", "LLL"]}, {"sku": "BR03081B", "desc": "Enj Buc COLG Sens Pro Alivio 250ml", "fisico": 722.0, "sistema": 715.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "C", "pct_acum": 97.4, "meses": ["2026-04", "2026-06"], "estantes": ["BBB", "III"]}, {"sku": "61015021.0", "desc": "TB HELLO Carbon x2", "fisico": 697.0, "sistema": 697.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 97.5, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61058147.0", "desc": "COLGATE TOTAL ENVCIA SALUDABLE /72 150 ML", "fisico": 695.0, "sistema": 695.0, "absdiff": 0, "conteos": 30, "con_diff": 0, "sin_diff": 30, "ira": 100.0, "abc": "C", "pct_acum": 97.6, "meses": ["2026-05", "2026-06"], "estantes": ["77.0", "CCC", "DDD", "EEE", "HHH"]}, {"sku": "61052910.0", "desc": "61052910.0", "fisico": 690.0, "sistema": 690.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "C", "pct_acum": 97.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "FFF", "JJJ"]}, {"sku": "61018776.0", "desc": "Enj COLG Plax FreshMt L1000 P700ml FKMB", "fisico": 675.0, "sistema": 675.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "C", "pct_acum": 97.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "III", "JJJ", "KKK", "LLL"]}, {"sku": "61033980.0", "desc": "TP ELMEX Sensitive Professional 30g", "fisico": 657.0, "sistema": 657.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "C", "pct_acum": 97.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["FFF", "HHH", "III", "KKK"]}, {"sku": "BR04226A", "desc": "JAB PO NAT FRAMBUESA Y MORA 85G 6PK", "fisico": 656.0, "sistema": 656.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "C", "pct_acum": 97.8, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "61054599.0", "desc": "SG PON Cherrry w Coconut Milk 760ml", "fisico": 618.0, "sistema": 618.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "C", "pct_acum": 97.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "DDD", "EEE", "JJJ"]}, {"sku": "61030042.0", "desc": "Enj Buc COLGATE Plax Kids Minions 250ml", "fisico": 614.0, "sistema": 616.0, "absdiff": 7.0, "conteos": 14, "con_diff": 4, "sin_diff": 10, "ira": 71.4, "abc": "C", "pct_acum": 98.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "III", "LLL"]}, {"sku": "61006233.0", "desc": "CD COLGATE Natural ExtractsCarb\u00f3n Act90g", "fisico": 614.0, "sistema": 613.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "C", "pct_acum": 98.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "EEE", "JJJ"]}, {"sku": "61054378.0", "desc": "61054378.0", "fisico": 609.0, "sistema": 609.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "C", "pct_acum": 98.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "HHH", "KKK", "LLL"]}, {"sku": "US07311A", "desc": "HELLO NAT HLTHY WHTG 4.7Z FL TP", "fisico": 596.0, "sistema": 596.0, "absdiff": 0, "conteos": 4, "con_diff": 0, "sin_diff": 4, "ira": 100.0, "abc": "C", "pct_acum": 98.1, "meses": ["2026-05", "2026-06"], "estantes": ["LLL"]}, {"sku": "61001068.0", "desc": "TP COLGATE SSTVE IMM PRO RELIEF ORIGIN 60GR", "fisico": 593.0, "sistema": 593.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "C", "pct_acum": 98.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "FFF", "III"]}, {"sku": "61051003.0", "desc": "TP ELMEX SENSITIVE WHITENING 2X110G", "fisico": 593.0, "sistema": 593.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "C", "pct_acum": 98.3, "meses": ["2026-04", "2026-06"], "estantes": ["CCC", "KKK"]}, {"sku": "61047646.0", "desc": "TP COLGATE PERIOGARD 90GR", "fisico": 587.0, "sistema": 587.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "C", "pct_acum": 98.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "III", "JJJ", "KKK"]}, {"sku": "BR03476A", "desc": "Jab PO NAT ALOE VERA E OLIVA 85g", "fisico": 577.0, "sistema": 577.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "C", "pct_acum": 98.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["EEE", "HHH", "III", "KKK"]}, {"sku": "61043678.0", "desc": "CTBM Bamboo FHS 2PK_LA 24", "fisico": 577.0, "sistema": 577.0, "absdiff": 0, "conteos": 11, "con_diff": 0, "sin_diff": 11, "ira": 100.0, "abc": "C", "pct_acum": 98.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "JJJ", "LLL"]}, {"sku": "BR03482A", "desc": "Jab PO NAT FRAMBOESA E TURMALINA 85g", "fisico": 562.0, "sistema": 562.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "C", "pct_acum": 98.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "III", "KKK"]}, {"sku": "BR04227A", "desc": "JAB PO NAT KARITE 85G 6PK", "fisico": 548.0, "sistema": 552.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 98.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "0000000MX06729A", "desc": "CD COLGATE Luminous White Charcoal 125ml", "fisico": 526.0, "sistema": 526.0, "absdiff": 0, "conteos": 11, "con_diff": 0, "sin_diff": 11, "ira": 100.0, "abc": "C", "pct_acum": 98.6, "meses": ["2026-05"], "estantes": ["CCC", "DDD", "FFF", "GGG", "HHH"]}, {"sku": "FMX05541", "desc": "DEO LSS FLORAL FRSCH ROLL 30ML", "fisico": 525.0, "sistema": 525.0, "absdiff": 0, "conteos": 4, "con_diff": 0, "sin_diff": 4, "ira": 100.0, "abc": "C", "pct_acum": 98.7, "meses": ["2026-05", "2026-06"], "estantes": ["BBB", "DDD"]}, {"sku": "61046194.0", "desc": "PACK X2 SENSITIVE PROALIVIO INM ENCIAS 90GR", "fisico": 521.0, "sistema": 521.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "C", "pct_acum": 98.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "EEE", "III", "JJJ", "KKK"]}, {"sku": "CL00564A", "desc": "CD COLGATE Tr Acc Xtra Blanc 2x125ML", "fisico": 500.0, "sistema": 500.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "C", "pct_acum": 98.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "FFF", "HHH"]}, {"sku": "61035266.0", "desc": "SG PO Luminous Oil Macadamia 760 ml", "fisico": 493.0, "sistema": 493.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "C", "pct_acum": 98.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "DDD", "EEE", "FFF", "III"]}, {"sku": "61009934.0", "desc": "Enj Buc COLG LW Carbon 500ml", "fisico": 485.0, "sistema": 491.0, "absdiff": 3.0, "conteos": 15, "con_diff": 2, "sin_diff": 13, "ira": 86.7, "abc": "C", "pct_acum": 98.9, "meses": ["2026-04", "2026-06"], "estantes": ["BBB", "GGG", "III"]}, {"sku": "61041759.0", "desc": "TP COLGATE PERIOGARD 30G", "fisico": 481.0, "sistema": 481.0, "absdiff": 0, "conteos": 15, "con_diff": 0, "sin_diff": 15, "ira": 100.0, "abc": "C", "pct_acum": 98.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "CCC", "HHH", "III", "JJJ"]}, {"sku": "61022165.0", "desc": "JLC PALMOLIVE NUTRIMILK 650ML", "fisico": 465.0, "sistema": 465.0, "absdiff": 1.0, "conteos": 11, "con_diff": 1, "sin_diff": 10, "ira": 90.9, "abc": "C", "pct_acum": 99.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "HHH", "III"]}, {"sku": "61042098.0", "desc": "TP COLGATE ULTRA MICROPARTICULAS 90G", "fisico": 454.0, "sistema": 427.0, "absdiff": 0, "conteos": 46, "con_diff": 0, "sin_diff": 46, "ira": 100.0, "abc": "C", "pct_acum": 99.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["33.0", "5.0", "HHH", "III"]}, {"sku": "US03668A", "desc": "LSS Derma Nacar Perla Barra 45GR", "fisico": 440.0, "sistema": 439.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "C", "pct_acum": 99.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["30.0", "JJJ"]}, {"sku": "61054533.0", "desc": "DEO LSS POWDER FRESH STICK 45GR", "fisico": 403.0, "sistema": 403.0, "absdiff": 0, "conteos": 2, "con_diff": 0, "sin_diff": 2, "ira": 100.0, "abc": "C", "pct_acum": 99.1, "meses": ["2026-05"], "estantes": ["74.0", "76.0"]}, {"sku": "61006260.0", "desc": "CD COLG Natural Extracts Carbon Actv140g", "fisico": 395.0, "sistema": 395.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 99.1, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "HHH"]}, {"sku": "61000960.0", "desc": "Cep Den ELMEX Anticaries", "fisico": 357.0, "sistema": 357.0, "absdiff": 0, "conteos": 6, "con_diff": 0, "sin_diff": 6, "ira": 100.0, "abc": "C", "pct_acum": 99.2, "meses": ["2026-04"], "estantes": ["KKK"]}, {"sku": "61007205.0", "desc": "TB COLG ZIG ZAG CHARCOAL 8PK", "fisico": 337.0, "sistema": 337.0, "absdiff": 0, "conteos": 44, "con_diff": 0, "sin_diff": 44, "ira": 100.0, "abc": "C", "pct_acum": 99.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["14.0", "BBB", "DDD", "EEE", "FFF"]}, {"sku": "61015569.0", "desc": "CD COLGATE Sens Imed Pro Ali Enc\u00eda 140g", "fisico": 336.0, "sistema": 336.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "C", "pct_acum": 99.2, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["III", "LLL"]}, {"sku": "61056241.0", "desc": "BS PON Raspberry   Blackberry 4x85g", "fisico": 320.0, "sistema": 320.0, "absdiff": 3.0, "conteos": 4, "con_diff": 1, "sin_diff": 3, "ira": 75.0, "abc": "C", "pct_acum": 99.3, "meses": ["2026-04", "2026-06"], "estantes": ["BBB", "GGG", "KKK"]}, {"sku": "61040636.0", "desc": "MOUTHWASH ELMEX SENSITIVE 400ML", "fisico": 312.0, "sistema": 312.0, "absdiff": 1.0, "conteos": 10, "con_diff": 1, "sin_diff": 9, "ira": 90.0, "abc": "C", "pct_acum": 99.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["JJJ", "LLL"]}, {"sku": "MX06114A", "desc": "CD CLGTE Max White 160ML", "fisico": 309.0, "sistema": 309.0, "absdiff": 0, "conteos": 20, "con_diff": 0, "sin_diff": 20, "ira": 100.0, "abc": "C", "pct_acum": 99.3, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["BBB", "FFF", "GGG", "III", "JJJ"]}, {"sku": "61051139.0", "desc": "Dental Floss COLGATE TOTAL 25M", "fisico": 308.0, "sistema": 308.0, "absdiff": 0, "conteos": 3, "con_diff": 0, "sin_diff": 3, "ira": 100.0, "abc": "C", "pct_acum": 99.4, "meses": ["2026-04", "2026-06"], "estantes": ["CCC", "III"]}, {"sku": "61057080.0", "desc": "TOTAL 12 ORIGINAL MINT-2X150G", "fisico": 303.0, "sistema": 303.0, "absdiff": 0, "conteos": 19, "con_diff": 0, "sin_diff": 19, "ira": 100.0, "abc": "C", "pct_acum": 99.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "GGG", "JJJ", "LLL"]}, {"sku": "BR03489A", "desc": "Jab PALMOLIVE Ntrmlk Regular 85gr", "fisico": 300.0, "sistema": 300.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 99.4, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH", "KKK"]}, {"sku": "61057629.0", "desc": "TOT INTERDENTAL CLEAN 140GR", "fisico": 296.0, "sistema": 296.0, "absdiff": 0, "conteos": 5, "con_diff": 0, "sin_diff": 5, "ira": 100.0, "abc": "C", "pct_acum": 99.4, "meses": ["2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "61022164.0", "desc": "SG PALMOLIVE NATRLS CAMELIA 650 ML", "fisico": 287.0, "sistema": 287.0, "absdiff": 0, "conteos": 2, "con_diff": 0, "sin_diff": 2, "ira": 100.0, "abc": "C", "pct_acum": 99.5, "meses": ["2026-05"], "estantes": ["FFF"]}, {"sku": "61030928.0", "desc": "Enj Buc COLG CLEAN MINT 500ML", "fisico": 286.0, "sistema": 286.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 99.5, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "KKK"]}, {"sku": "61002173.0", "desc": "CD COLGATE Sstve Whitng 100gr", "fisico": 284.0, "sistema": 284.0, "absdiff": 1.0, "conteos": 12, "con_diff": 1, "sin_diff": 11, "ira": 91.7, "abc": "C", "pct_acum": 99.5, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61029528.0", "desc": "LHS PROTEX Vitamin E 500ml Doypack", "fisico": 279.0, "sistema": 279.0, "absdiff": 0, "conteos": 12, "con_diff": 0, "sin_diff": 12, "ira": 100.0, "abc": "C", "pct_acum": 99.6, "meses": ["2026-04", "2026-06"], "estantes": ["GGG", "JJJ"]}, {"sku": "61009345.0", "desc": "CD COLGATE Total Prof Gums 150ml", "fisico": 269.0, "sistema": 268.0, "absdiff": 0, "conteos": 18, "con_diff": 0, "sin_diff": 18, "ira": 100.0, "abc": "C", "pct_acum": 99.6, "meses": ["2026-04", "2026-06"], "estantes": ["CCC", "GGG", "III"]}, {"sku": "61029488.0", "desc": "Enj Buc COLGATE Plax Ice 500ml", "fisico": 268.0, "sistema": 268.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 99.6, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61043614.0", "desc": "TP COLGATE TRIPLE ACTION 50G", "fisico": 266.0, "sistema": 266.0, "absdiff": 0, "conteos": 25, "con_diff": 0, "sin_diff": 25, "ira": 100.0, "abc": "C", "pct_acum": 99.6, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["26.0", "CCC", "KKK"]}, {"sku": "61003176.0", "desc": "Enj Buc COLG Pgard ZeroAlc 2l", "fisico": 262.0, "sistema": 262.0, "absdiff": 0, "conteos": 9, "con_diff": 0, "sin_diff": 9, "ira": 100.0, "abc": "C", "pct_acum": 99.7, "meses": ["2026-04", "2026-06"], "estantes": ["HHH", "JJJ"]}, {"sku": "61011870.0", "desc": "CD COLGATE Tot Encias S 2x100ml Paq", "fisico": 246.0, "sistema": 246.0, "absdiff": 0, "conteos": 14, "con_diff": 0, "sin_diff": 14, "ira": 100.0, "abc": "C", "pct_acum": 99.7, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["DDD", "FFF", "GGG", "HHH", "III"]}, {"sku": "61023895.0", "desc": "MW COLGATE PLAX ODOR CONTROL 500 ML", "fisico": 242.0, "sistema": 242.0, "absdiff": 1.0, "conteos": 9, "con_diff": 1, "sin_diff": 8, "ira": 88.9, "abc": "C", "pct_acum": 99.7, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61016410.0", "desc": "Gel Dental HELLO Unicorn kids 88ml", "fisico": 210.0, "sistema": 210.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 99.7, "meses": ["2026-04", "2026-06"], "estantes": ["CCC", "JJJ"]}, {"sku": "CN05584A", "desc": "CTBM 360 BASE FH M 5PK_LATAM", "fisico": 209.0, "sistema": 209.0, "absdiff": 0, "conteos": 9, "con_diff": 0, "sin_diff": 9, "ira": 100.0, "abc": "C", "pct_acum": 99.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["85.0", "DDD", "EEE", "III"]}, {"sku": "61043910.0", "desc": "LHS PO NATURALS CAMELLIA REFILL 900ML", "fisico": 206.0, "sistema": 206.0, "absdiff": 0, "conteos": 11, "con_diff": 0, "sin_diff": 11, "ira": 100.0, "abc": "C", "pct_acum": 99.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["76.0", "CCC", "HHH", "III"]}, {"sku": "61005523.0", "desc": "Jab PO NAT PARTICULAS DE CARVAO 85g", "fisico": 202.0, "sistema": 202.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 99.8, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["III", "KKK"]}, {"sku": "61057515.0", "desc": "DEO LSS 3 PCK SPR PERLA+PWD+PRO5 91GR", "fisico": 200.0, "sistema": 200.0, "absdiff": 0, "conteos": 1, "con_diff": 0, "sin_diff": 1, "ira": 100.0, "abc": "C", "pct_acum": 99.8, "meses": ["2026-06"], "estantes": ["BBB"]}, {"sku": "61054376.0", "desc": "COLGATE TOTAL ORIGINAL MINT", "fisico": 179.0, "sistema": 179.0, "absdiff": 0, "conteos": 3, "con_diff": 0, "sin_diff": 3, "ira": 100.0, "abc": "C", "pct_acum": 99.8, "meses": ["2026-04", "2026-05"], "estantes": ["CCC", "FFF"]}, {"sku": "61043911.0", "desc": "LHS PO NAT JAZMIN N CACAO REFILL 900ML", "fisico": 167.0, "sistema": 167.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 99.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["45.0", "57.0", "KKK"]}, {"sku": "61033937.0", "desc": "CD ELMEX ANTICARIES 90GR", "fisico": 166.0, "sistema": 166.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 99.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["JJJ", "LLL"]}, {"sku": "61000241.0", "desc": "CTBM Bamboo FHS 2P_LA*24", "fisico": 160.0, "sistema": 160.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 99.9, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61001132.0", "desc": "CD COLG Sstve ProAlvio Inmed Orign 140gr", "fisico": 147.0, "sistema": 148.0, "absdiff": 2.0, "conteos": 8, "con_diff": 1, "sin_diff": 7, "ira": 87.5, "abc": "C", "pct_acum": 99.9, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["CCC", "EEE", "III"]}, {"sku": "61039356.0", "desc": "61039356.0", "fisico": 137.0, "sistema": 137.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 99.9, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61057408.0", "desc": "CTBM Smiles Harry Potter Kids + 6 4PK_LA", "fisico": 133.0, "sistema": 133.0, "absdiff": 0, "conteos": 1, "con_diff": 0, "sin_diff": 1, "ira": 100.0, "abc": "C", "pct_acum": 99.9, "meses": ["2026-05"], "estantes": ["HHH"]}, {"sku": "VN00875A", "desc": "Cep Den COLGATE SUPER FLEXI suave 2Paq", "fisico": 96.0, "sistema": 96.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "C", "pct_acum": 99.9, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61000274.0", "desc": "Deo LSS Naturals Coco Bar 60g", "fisico": 87.0, "sistema": 87.0, "absdiff": 0, "conteos": 13, "con_diff": 0, "sin_diff": 13, "ira": 100.0, "abc": "C", "pct_acum": 99.9, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61030986.0", "desc": "TP COLGATE Total 12 Charcoal 3x75ml", "fisico": 77.0, "sistema": 77.0, "absdiff": 0, "conteos": 30, "con_diff": 0, "sin_diff": 30, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "FUS90759", "desc": "Deo SS Hipoalergenico AP 50gr", "fisico": 68.0, "sistema": 68.0, "absdiff": 0, "conteos": 33, "con_diff": 0, "sin_diff": 33, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61017650.0", "desc": "Cep COLG SlimSoft Black 2PK", "fisico": 65.0, "sistema": 65.0, "absdiff": 0, "conteos": 16, "con_diff": 0, "sin_diff": 16, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61020355.0", "desc": "JLC PON Sandia y Lychee 390ml", "fisico": 55.0, "sistema": 54.0, "absdiff": 1.0, "conteos": 13, "con_diff": 1, "sin_diff": 12, "ira": 92.3, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61030985.0", "desc": "CD COLGATE Total 12 Charcoal 75ml", "fisico": 42.0, "sistema": 42.0, "absdiff": 0, "conteos": 31, "con_diff": 0, "sin_diff": 31, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "61030942.0", "desc": "Enj Buc COLG TOTAL Anti Sarro 500ml", "fisico": 40.0, "sistema": 40.0, "absdiff": 0, "conteos": 17, "con_diff": 0, "sin_diff": 17, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "61030899.0", "desc": "Enj Buc COLG TT12 Encias Reforzada 500ml", "fisico": 40.0, "sistema": 40.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "BR02606A", "desc": "TOOTHPASTE COLG SENS PRO RELIEF 110G", "fisico": 32.0, "sistema": 32.0, "absdiff": 0, "conteos": 10, "con_diff": 0, "sin_diff": 10, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["III", "LLL"]}, {"sku": "61030989.0", "desc": "TP COLGATE Total 12 Charcoal 150ml", "fisico": 32.0, "sistema": 32.0, "absdiff": 0, "conteos": 32, "con_diff": 0, "sin_diff": 32, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "61012817.0", "desc": "Cep Den HELLO charcoal x2", "fisico": 24.0, "sistema": 24.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "61009203.0", "desc": "Cep Den COLG Essencial C FlowPack 6un1pq", "fisico": 8.0, "sistema": 8.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61023574.0", "desc": "Cep COLGATE Gum Therapy 2pk", "fisico": 8.0, "sistema": 8.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "CL00548B", "desc": "CD COLGATE Cln Mnt 2x150ml SpPaq", "fisico": 5.0, "sistema": 5.0, "absdiff": 5.0, "conteos": 8, "con_diff": 1, "sin_diff": 7, "ira": 87.5, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "61058438.0", "desc": "QA 2025-M10-1/4 TP TB MW DEOS JAB", "fisico": 2.0, "sistema": 2.0, "absdiff": 0, "conteos": 2, "con_diff": 0, "sin_diff": 2, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-06"], "estantes": ["BBB"]}, {"sku": "61012771.0", "desc": "HELLO KIDS 4.2Z CS SP UNICORN FLUO TP", "fisico": 1.0, "sistema": 1.0, "absdiff": 0, "conteos": 2, "con_diff": 0, "sin_diff": 2, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-06"], "estantes": ["KKK"]}, {"sku": "61048070.0", "desc": "MTB-COL TRV KIT PORTABLE", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "61009708.0", "desc": "TP COLGATE TOTAL CLEAN MINT 63ML", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 5, "con_diff": 0, "sin_diff": 5, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04"], "estantes": ["HHH"]}, {"sku": "61000928.0", "desc": "Cep Den ELMEX Sensitive", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "FCL54310", "desc": "CD COLGATE MPA Paq x12 PrEsp", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 8, "con_diff": 0, "sin_diff": 8, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-05", "2026-06"], "estantes": ["HHH"]}, {"sku": "BR02605B", "desc": "CD COLGATE Sstve Pro A ReaLum Whte110gr", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 6, "con_diff": 0, "sin_diff": 6, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "61020084.0", "desc": "Cep Den COLGATE PremierCln N Head F 6PZA", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 6, "con_diff": 0, "sin_diff": 6, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "BR02602A", "desc": "TP COLGATE SSTEVE PRO RELIEF ORIGN 50GR", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 6, "con_diff": 0, "sin_diff": 6, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "61027712.0", "desc": "HELLO MW 16Z CS SP ACTIVATED CHARCOAL", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 6, "con_diff": 0, "sin_diff": 6, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "VN00030A", "desc": "Cep Den COLGATE Twstr Whitng 2x1 Suav", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 6, "con_diff": 0, "sin_diff": 6, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "61010489.0", "desc": "CD COLG Luminous White Wine Stains 70g", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 6, "con_diff": 0, "sin_diff": 6, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "CN07070A", "desc": "Cep Den Col Smiles Barbie/Minions 2-5_LA", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["III"]}, {"sku": "61010394.0", "desc": "Enj Buc COLGATE Total 12 Spray 60ml", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 5, "con_diff": 0, "sin_diff": 5, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04"], "estantes": ["JJJ"]}, {"sku": "FVN01210", "desc": "TB COLGATE ZZ Antibac Xtra Reach Soft 2p", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61030105.0", "desc": "Cep Den COLGATE TrAcc 2Paq", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61001180.0", "desc": "CD COLGATE Periogard 90g", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61029194.0", "desc": "EnjB COLG Natural Extract Charcoal 500ml", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "FCN54306", "desc": "Cep Den DENTO  Pro Med 2x1", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61030217.0", "desc": "TP COLG Natural ExtractsReinfDefense 90g", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "BR02835A", "desc": "CD COLGATE MPA Ntro Azcr 47ml", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["JJJ"]}, {"sku": "61008661.0", "desc": "CEP COLG Gum Renewal CH S 2PK", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61035113.0", "desc": "Cep Den COLGATE Sensitive Pro Alivio 1pc", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 7, "con_diff": 0, "sin_diff": 7, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04", "2026-06"], "estantes": ["KKK"]}, {"sku": "61034011.0", "desc": "Cep Den COLGATE Slimsoft Charcoal 3pk", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 1, "con_diff": 0, "sin_diff": 1, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04"], "estantes": ["KKK"]}, {"sku": "61018473.0", "desc": "TP COLGATE MCP 30g", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 5, "con_diff": 0, "sin_diff": 5, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-04"], "estantes": ["KKK"]}, {"sku": "N/A", "desc": "UBICACI\u00d3N VAC\u00cdA", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 437, "con_diff": 0, "sin_diff": 437, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-05", "2026-06"], "estantes": ["10.0", "12.0", "13.0", "15.0", "16.0"]}, {"sku": "61056187.0", "desc": "TP COLAGTE TOTAL ORIGINAL MINT 63ML", "fisico": 0.0, "sistema": 0.0, "absdiff": 0, "conteos": 2, "con_diff": 0, "sin_diff": 2, "ira": 100.0, "abc": "C", "pct_acum": 100.0, "meses": ["2026-06"], "estantes": ["KKK"]}], "pend_est": [{"est": "AAA", "total": 2121, "contadas": 0, "sin_contar": 2121}, {"est": "BBB", "total": 478, "contadas": 478, "sin_contar": 0}, {"est": "BLO", "total": 1, "contadas": 0, "sin_contar": 1}, {"est": "BN", "total": 24, "contadas": 24, "sin_contar": 0}, {"est": "BUN", "total": 4, "contadas": 0, "sin_contar": 4}, {"est": "CAM", "total": 4, "contadas": 0, "sin_contar": 4}, {"est": "CCC", "total": 479, "contadas": 479, "sin_contar": 0}, {"est": "CMS", "total": 264, "contadas": 0, "sin_contar": 264}, {"est": "CNT", "total": 4, "contadas": 0, "sin_contar": 4}, {"est": "CON", "total": 59, "contadas": 58, "sin_contar": 1}, {"est": "CPK", "total": 40, "contadas": 0, "sin_contar": 40}, {"est": "DDD", "total": 447, "contadas": 447, "sin_contar": 0}, {"est": "DEV", "total": 48, "contadas": 14, "sin_contar": 34}, {"est": "DR0", "total": 444, "contadas": 0, "sin_contar": 444}, {"est": "DRS", "total": 6, "contadas": 0, "sin_contar": 6}, {"est": "EEE", "total": 469, "contadas": 469, "sin_contar": 0}, {"est": "EX0", "total": 1, "contadas": 0, "sin_contar": 1}, {"est": "FFF", "total": 478, "contadas": 478, "sin_contar": 0}, {"est": "GGG", "total": 520, "contadas": 372, "sin_contar": 148}, {"est": "HHH", "total": 494, "contadas": 494, "sin_contar": 0}, {"est": "III", "total": 458, "contadas": 458, "sin_contar": 0}, {"est": "INV", "total": 53, "contadas": 0, "sin_contar": 53}, {"est": "JJJ", "total": 485, "contadas": 485, "sin_contar": 0}, {"est": "KKK", "total": 497, "contadas": 497, "sin_contar": 0}, {"est": "LLL", "total": 470, "contadas": 470, "sin_contar": 0}, {"est": "MMM", "total": 51, "contadas": 0, "sin_contar": 51}, {"est": "PAL", "total": 20, "contadas": 0, "sin_contar": 20}, {"est": "PUL", "total": 29, "contadas": 0, "sin_contar": 29}, {"est": "RCP", "total": 19, "contadas": 0, "sin_contar": 19}, {"est": "REC", "total": 22, "contadas": 0, "sin_contar": 22}, {"est": "REL", "total": 1, "contadas": 0, "sin_contar": 1}, {"est": "RP0", "total": 1, "contadas": 0, "sin_contar": 1}, {"est": "RT0", "total": 1, "contadas": 0, "sin_contar": 1}, {"est": "ZKC", "total": 1, "contadas": 0, "sin_contar": 1}], "total_pend": 8493, "contadas_total": 5223, "sin_contar": 3270, "daily_rate": 386.0, "dias_restantes": 9, "total_fisico": 992457.0};
+
+const EST_PLAN = {
+  'AAA':{abc:'C',total:2121,done:0,pend:2121},
+  'BBB':{abc:'A',total:478,done:478,pend:0},
+  'BLO':{abc:'C',total:1,done:0,pend:1},
+  'BN':{abc:'A',total:24,done:24,pend:0},
+  'BUN':{abc:'C',total:4,done:0,pend:4},
+  'CAM':{abc:'C',total:4,done:0,pend:4},
+  'CCC':{abc:'A',total:479,done:479,pend:0},
+  'CMS':{abc:'C',total:264,done:0,pend:264},
+  'CNT':{abc:'C',total:4,done:0,pend:4},
+  'CON':{abc:'A',total:59,done:58,pend:1},
+  'CPK':{abc:'C',total:40,done:0,pend:40},
+  'DDD':{abc:'A',total:447,done:447,pend:0},
+  'DEV':{abc:'A',total:48,done:14,pend:34},
+  'DR0':{abc:'C',total:444,done:0,pend:444},
+  'DRS':{abc:'C',total:6,done:0,pend:6},
+  'EEE':{abc:'A',total:469,done:469,pend:0},
+  'EX0':{abc:'C',total:1,done:0,pend:1},
+  'FFF':{abc:'A',total:478,done:478,pend:0},
+  'GGG':{abc:'A',total:520,done:372,pend:148},
+  'HHH':{abc:'A',total:494,done:494,pend:0},
+  'III':{abc:'A',total:458,done:458,pend:0},
+  'INV':{abc:'C',total:53,done:0,pend:53},
+  'JJJ':{abc:'A',total:485,done:485,pend:0},
+  'KKK':{abc:'A',total:497,done:497,pend:0},
+  'LLL':{abc:'A',total:470,done:470,pend:0},
+  'MMM':{abc:'C',total:51,done:0,pend:51},
+  'PAL':{abc:'C',total:20,done:0,pend:20},
+  'PUL':{abc:'C',total:29,done:0,pend:29},
+  'RCP':{abc:'C',total:19,done:0,pend:19},
+  'REC':{abc:'C',total:22,done:0,pend:22},
+  'REL':{abc:'C',total:1,done:0,pend:1},
+  'RP0':{abc:'C',total:1,done:0,pend:1},
+  'RT0':{abc:'C',total:1,done:0,pend:1},
+  'ZKC':{abc:'C',total:1,done:0,pend:1}
+};
+const A_ESTS = Object.entries(EST_PLAN).filter(([,d])=>d.abc==='A').sort((a,b)=>b[1].total-a[1].total);
+const C_ESTS = Object.entries(EST_PLAN).filter(([,d])=>d.abc==='C'&&d.total>0).sort((a,b)=>b[1].pend-a[1].pend);
+
+// ── Navigation ─────────────────────────────────────────────
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+}
+function showMonth(idx,el){
+  document.querySelectorAll('.month-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.month-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('month-'+idx).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Helpers ────────────────────────────────────────────────
+const fmtN = n=>Number(n).toLocaleString('es-CL');
+const pctColor = v=>v>=99?'#1d9e75':v>=95?'#ba7517':'#d85a30';
+const badgeCls = v=>v>=99?'ok':v>=95?'warn':'err';
+
+// ── Planning tables ────────────────────────────────────────
+function renderPlanningTables(){
+  const dailyRate = 386, weeklyCap = dailyRate*5;
+  // Assign ubics to 4 weeks per month, A estantes first
+  function assignWeeks(total){
+    const perWeek = Math.ceil(total/4);
+    const w = [0,0,0,0];
+    let rem = total;
+    for(let i=0;i<4;i++){w[i]=Math.min(perWeek,rem);rem-=w[i];}
+    return w;
+  }
+
+  // ─ July A table
+  let julBodyA = '';
+  A_ESTS.forEach(([est,d])=>{
+    const ws = assignWeeks(d.total);
+    julBodyA += `<tr>
+      <td><b>${est}</b></td><td><span class="badge abc-a">A</span></td>
+      <td style="text-align:right">${fmtN(d.total)}</td>
+      <td style="text-align:right;color:#1d9e75">${fmtN(d.done)}</td>
+      ${ws.map(w=>`<td style="text-align:right">${fmtN(w)}</td>`).join('')}
+    </tr>`;
+  });
+  document.getElementById('tbody-jul-a').innerHTML = julBodyA;
+
+  // ─ July C table (carryover / pending)
+  let julBodyC = '';
+  const weekLabels = ['Sem 1 (1-5 Jul)','Sem 2 (7-11 Jul)','Sem 3 (14-18 Jul)','Sem 4 (21-25 Jul)'];
+  const cOrder = [...C_ESTS].sort((a,b)=>b[1].pend-a[1].pend);
+  cOrder.forEach(([est,d],i)=>{
+    const priority = i===0?weekLabels[0]:i<4?weekLabels[1]:i<10?weekLabels[2]:weekLabels[3];
+    julBodyC += `<tr>
+      <td><b>${est}</b></td><td><span class="badge abc-c">C</span></td>
+      <td style="text-align:right;color:${d.pend>0?'#d85a30':'#1d9e75'}">${fmtN(d.pend)}</td>
+      <td style="text-align:right">${fmtN(d.total)}</td>
+      <td style="font-size:11px;color:#6b7280">${priority}</td>
+    </tr>`;
+  });
+  document.getElementById('tbody-jul-c').innerHTML = julBodyC;
+
+  // ─ Aug A
+  let agoBodyA = '';
+  A_ESTS.forEach(([est,d])=>{
+    const ws = assignWeeks(d.total);
+    agoBodyA += `<tr>
+      <td><b>${est}</b></td><td><span class="badge abc-a">A</span></td>
+      <td style="text-align:right">${fmtN(d.total)}</td>
+      ${ws.map(w=>`<td style="text-align:right">${fmtN(w)}</td>`).join('')}
+    </tr>`;
+  });
+  document.getElementById('tbody-ago-a').innerHTML = agoBodyA;
+
+  // ─ Aug C
+  let agoBodyC = '';
+  C_ESTS.forEach(([est,d],i)=>{
+    const priority = i<5?'Sem 1':'Sem 2-3';
+    agoBodyC += `<tr>
+      <td><b>${est}</b></td><td><span class="badge abc-c">C</span></td>
+      <td style="text-align:right">${fmtN(d.total)}</td>
+      <td style="font-size:11px;color:#6b7280">${priority}</td>
+    </tr>`;
+  });
+  document.getElementById('tbody-ago-c').innerHTML = agoBodyC;
+
+  // ─ Sep A
+  let sepBodyA = '';
+  A_ESTS.forEach(([est,d])=>{
+    const ws = assignWeeks(d.total);
+    sepBodyA += `<tr>
+      <td><b>${est}</b></td><td><span class="badge abc-a">A</span></td>
+      <td style="text-align:right">${fmtN(d.total)}</td>
+      <td style="text-align:center"><span class="badge ok">3× (Jul+Ago+Sep)</span></td>
+      ${ws.map(w=>`<td style="text-align:right">${fmtN(w)}</td>`).join('')}
+    </tr>`;
+  });
+  document.getElementById('tbody-sep-a').innerHTML = sepBodyA;
+
+  // ─ Est grid for July
+  const grid = document.getElementById('est-grid-jul-a');
+  if(grid){
+    grid.innerHTML = A_ESTS.map(([est,d])=>`
+      <div class="est-block" style="background:#e6f1fb;border-color:#b5d4f4;color:#185fa5">
+        <span>${est}</span><span style="font-weight:400;font-size:10px">${fmtN(d.total)}</span>
+      </div>`).join('');
+  }
+}
+
+// ── Charts ─────────────────────────────────────────────────
+function initCharts(){
+  // Pie
+  new Chart(document.getElementById('chart-pie'),{
+    type:'doughnut',data:{labels:['Sin diferencia','Con diferencia'],datasets:[{data:[11251,57],backgroundColor:['#1d9e75','#d85a30'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+  // Mes bar
+  new Chart(document.getElementById('chart-mes'),{
+    type:'bar',data:{labels:['Abril 2026','Mayo 2026','Junio 2026'],datasets:[{data:[99.17,99.87,99.32],backgroundColor:['#378add','#1d9e75','#ba7517'],borderWidth:0,borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},scales:{y:{min:98,max:100,ticks:{callback:v=>v+'%',font:{size:11}}},x:{ticks:{font:{size:11}}}}}
+  });
+  // Estante
+  const ests=['BBB','CCC','DDD','EEE','FFF','GGG','HHH','III','JJJ','KKK','LLL'];
+  const iraEst=[99.9,99.9,99.6,100,100,100,99.4,98.8,99.0,99.4,99.7];
+  new Chart(document.getElementById('chart-estante'),{
+    type:'bar',data:{labels:ests,datasets:[{label:'IRA %',data:iraEst,backgroundColor:iraEst.map(v=>pctColor(v)),borderWidth:0,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},scales:{x:{min:98,max:100,ticks:{callback:v=>v+'%',font:{size:11}}},y:{ticks:{font:{size:11}}}}}
+  });
+  // Obs
+  new Chart(document.getElementById('chart-obs'),{
+    type:'bar',data:{labels:['Conteo altura','Cíclico altura','Post picking','Mal conteo','Dif. positiva','Dif. negativa'],datasets:[{data:[6299,938,725,76,29,7],backgroundColor:'#7f77dd',borderWidth:0,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:0}},y:{ticks:{font:{size:11}}}}}
+  });
+  // ABC curve
+  new Chart(document.getElementById('chart-abc-curve'),{
+    type:'line',data:{labels:DATA.skus.map((_,i)=>i+1),datasets:[{label:'% Acumulado',data:DATA.skus.map(s=>s.pct_acum),borderColor:'#378add',backgroundColor:'rgba(55,138,221,0.08)',tension:0.3,borderWidth:2,pointRadius:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:11}}},x:{ticks:{maxTicksLimit:10,font:{size:10}}}}}
+  });
+  new Chart(document.getElementById('chart-abc-pie'),{
+    type:'doughnut',data:{labels:['A (79.8%)','B (15.1%)','C (5.1%)'],datasets:[{data:[79.8,15.1,5.1],backgroundColor:['#378add','#7f77dd','#b4b2a9'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+  // Pend est
+  const pendEsts=Object.entries(EST_PLAN).filter(([,d])=>d.total>30).sort((a,b)=>b[1].total-a[1].total);
+  new Chart(document.getElementById('chart-pend-est'),{
+    type:'bar',
+    data:{labels:pendEsts.map(([e])=>e),datasets:[{label:'Contadas',data:pendEsts.map(([,d])=>d.done),backgroundColor:'#1d9e75',borderWidth:0,borderRadius:3},{label:'Sin contar',data:pendEsts.map(([,d])=>d.pend),backgroundColor:'#d85a30',borderWidth:0,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:10}}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}}}}}
+  });
+  new Chart(document.getElementById('chart-pend-pie'),{
+    type:'doughnut',data:{labels:['Contadas','Sin contar'],datasets:[{data:[5223,3270],backgroundColor:['#1d9e75','#d85a30'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+
+  // ─ Planning weekly charts
+  const weekLabels = ['Sem 1','Sem 2','Sem 3','Sem 4'];
+  const totalA = 5406, totalC = 3087, cap = 8492;
+  const perWeekA = Math.round(totalA/4);
+  const perWeekC = Math.round(totalC/4);
+  const carryPerWeek = Math.round(3270/4);
+
+  // July: A (normal) + carryover C (pending)
+  new Chart(document.getElementById('chart-jul-weeks'),{
+    type:'bar',
+    data:{labels:weekLabels,datasets:[
+      {label:'Estantes A',data:[perWeekA,perWeekA,perWeekA,totalA-perWeekA*3],backgroundColor:'#378add',borderWidth:0,borderRadius:3},
+      {label:'Carryover Jun (C pend)',data:[carryPerWeek,carryPerWeek,carryPerWeek,3270-carryPerWeek*3],backgroundColor:'#d85a30',borderWidth:0,borderRadius:3},
+      {label:'Zonas C nuevas',data:[0,0,perWeekC,totalC-perWeekC],backgroundColor:'#b4b2a9',borderWidth:0,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw.toLocaleString('es-CL')}}},scales:{
+      x:{stacked:true,ticks:{font:{size:11}}},
+      y:{stacked:true,ticks:{font:{size:11},callback:v=>v.toLocaleString('es-CL')},max:cap}
+    }}
+  });
+  // August: A + C
+  new Chart(document.getElementById('chart-ago-weeks'),{
+    type:'bar',
+    data:{labels:weekLabels,datasets:[
+      {label:'Estantes A',data:[perWeekA,perWeekA,perWeekA,totalA-perWeekA*3],backgroundColor:'#378add',borderWidth:0,borderRadius:3},
+      {label:'Zonas C',data:[perWeekC,perWeekC,perWeekC,totalC-perWeekC*3],backgroundColor:'#b4b2a9',borderWidth:0,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw.toLocaleString('es-CL')}}},scales:{
+      x:{stacked:true,ticks:{font:{size:11}}},
+      y:{stacked:true,ticks:{font:{size:11},callback:v=>v.toLocaleString('es-CL')},max:cap}
+    }}
+  });
+  // Sep: A only + free capacity shown
+  new Chart(document.getElementById('chart-sep-weeks'),{
+    type:'bar',
+    data:{labels:weekLabels,datasets:[
+      {label:'Estantes A',data:[perWeekA,perWeekA,perWeekA,totalA-perWeekA*3],backgroundColor:'#378add',borderWidth:0,borderRadius:3},
+      {label:'Capacidad libre',data:[cap/4-perWeekA,cap/4-perWeekA,cap/4-perWeekA,cap/4-(totalA-perWeekA*3)],backgroundColor:'#e5e7eb',borderWidth:0,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw.toLocaleString('es-CL')}}},scales:{
+      x:{stacked:true,ticks:{font:{size:11}}},
+      y:{stacked:true,ticks:{font:{size:11},callback:v=>v.toLocaleString('es-CL')},max:cap}
+    }}
+  });
+  // Trimestral summary
+  new Chart(document.getElementById('chart-trimestral'),{
+    type:'bar',
+    data:{labels:['Julio 2026','Agosto 2026','Septiembre 2026'],datasets:[
+      {label:'Estantes A',data:[5406,5406,5406],backgroundColor:'#378add',borderWidth:0,borderRadius:4},
+      {label:'Zonas C + Carryover',data:[3087,3087,0],backgroundColor:'#b4b2a9',borderWidth:0,borderRadius:4},
+      {label:'Pendiente Jun',data:[3270,0,0],backgroundColor:'#d85a30',borderWidth:0,borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:10}}},scales:{
+      x:{stacked:false,ticks:{font:{size:11}}},
+      y:{ticks:{font:{size:11},callback:v=>v.toLocaleString('es-CL')}}
+    }}
+  });
+  // KPI trend
+  new Chart(document.getElementById('chart-kpi-trend'),{
+    type:'line',
+    data:{labels:['Abr 2026','May 2026','Jun 2026'],datasets:[
+      {label:'IRA',data:[99.17,99.87,99.32],borderColor:'#1d9e75',tension:0.3,borderWidth:2,pointRadius:5},
+      {label:'ARI',data:[99.98,99.95,99.85],borderColor:'#378add',tension:0.3,borderWidth:2,pointRadius:5,borderDash:[5,3]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:10}}},scales:{y:{min:99,max:100.1,ticks:{callback:v=>v+'%',font:{size:11}}},x:{ticks:{font:{size:11}}}}}
+  });
+}
+
+// ── SKU Table ──────────────────────────────────────────────
+let skuData=[...DATA.skus],skuPage=1;
+const skuPageSize=30;
+
+function filterSKU(){
+  const q=document.getElementById('sku-search').value.toLowerCase();
+  const abc=document.getElementById('sku-abc').value;
+  const diff=document.getElementById('sku-diff').value;
+  skuData=DATA.skus.filter(s=>{
+    if(abc&&s.abc!==abc)return false;
+    if(diff==='diff'&&s.con_diff===0)return false;
+    if(diff==='ok'&&s.con_diff>0)return false;
+    if(q&&!s.sku.toLowerCase().includes(q)&&!s.desc.toLowerCase().includes(q))return false;
+    return true;
+  });
+  skuPage=1;renderSKUTable();
+}
+function sortSKU(col){
+  const cur=document.querySelector('#sku-table th.sort-asc,#sku-table th.sort-desc');
+  document.querySelectorAll('#sku-table th').forEach(th=>th.className='');
+  skuData.sort((a,b)=>{const va=a[col],vb=b[col];return typeof va==='string'?va.localeCompare(vb):vb-va;});
+  renderSKUTable();
+}
+function renderSKUTable(){
+  const s=(skuPage-1)*skuPageSize,e=s+skuPageSize,page=skuData.slice(s,e);
+  document.getElementById('sku-summary').textContent=`${skuData.length} SKUs · ${skuData.filter(s=>s.con_diff>0).length} con diferencia · Físico: ${fmtN(skuData.reduce((a,s)=>a+s.fisico,0))} uds`;
+  document.getElementById('sku-tbody').innerHTML=page.map((s,i)=>`<tr>
+    <td style="color:#9ca3af">${s+i+1}</td>
+    <td style="font-family:monospace;font-size:11px">${s.sku}</td>
+    <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.desc}">${s.desc}</td>
+    <td><span class="badge abc-${s.abc.toLowerCase()}">${s.abc}</span></td>
+    <td style="text-align:right;font-weight:600">${fmtN(s.fisico)}</td>
+    <td style="text-align:right">${s.pct_acum}%</td>
+    <td><span class="badge ${badgeCls(s.ira)}">${s.ira}%</span></td>
+    <td style="text-align:right">${s.conteos}</td>
+    <td style="text-align:right;color:${s.con_diff>0?'#d85a30':'#1d9e75'};font-weight:${s.con_diff>0?700:400}">${s.con_diff}</td>
+    <td style="text-align:right">${fmtN(s.absdiff)}</td>
+    <td style="font-size:10px;color:#6b7280">${s.meses.join(', ')}</td>
+    <td style="font-size:10px;color:#6b7280">${s.estantes.slice(0,4).join(', ')}${s.estantes.length>4?'…':''}</td>
+  </tr>`).map((r,i)=>r).join('');
+  const total=Math.ceil(skuData.length/skuPageSize);
+  document.getElementById('sku-pages').innerHTML=`<span>Pág ${skuPage}/${total}</span>${skuPage>1?`<button class="btn" onclick="skuPage--;renderSKUTable()">← Ant</button>`:''} ${skuPage<total?`<button class="btn" onclick="skuPage++;renderSKUTable()">Sig →</button>`:''}`;
+}
+
+// ── Pendientes Table ───────────────────────────────────────
+function renderPendTable(){
+  const fil=document.getElementById('pend-filter').value;
+  const rows=Object.entries(EST_PLAN).filter(([,d])=>{
+    if(fil==='pend')return d.pend>0;
+    if(fil==='done')return d.pend===0&&d.done>0;
+    return d.total>0;
+  });
+  document.getElementById('pend-tbody').innerHTML=rows.map(([est,d])=>{
+    const pct2=d.total>0?Math.round(d.done/d.total*100):0;
+    const col=pct2===100?'#1d9e75':pct2>=50?'#ba7517':'#d85a30';
+    const st=pct2===100?'<span class="badge ok">✓ Completo</span>':pct2===0?'<span class="badge err">Pendiente</span>':'<span class="badge warn">En curso</span>';
+    return `<tr>
+      <td><b>${est}</b></td><td style="text-align:right">${fmtN(d.total)}</td>
+      <td style="text-align:right;color:#1d9e75">${fmtN(d.done)}</td>
+      <td style="text-align:right;color:${d.pend>0?'#d85a30':'#1d9e75'}">${fmtN(d.pend)}</td>
+      <td><div class="prog"><div class="prog-bar"><div class="prog-fill" style="width:${pct2}%;background:${col}"></div></div><span style="color:${col}">${pct2}%</span></div></td>
+      <td>${st}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Init ───────────────────────────────────────────────────
+window.onload=()=>{
+  initCharts();
+  renderPlanningTables();
+  filterSKU();
+  renderPendTable();
+};
+</script>
+</body>
+</html>
