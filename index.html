@@ -3,75 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Conteo Ciclico — Colgate</title>
+<title>Conteo Cíclico — Colgate</title>
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--border:#e2e5ea;--text:#1a1d23;--text2:#6b7280;
-  --green:#1d9e75;--amber:#ba7517;--red:#d85a30;--blue:#378add;--purple:#7f77dd}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
-.nav{background:#1a1d23;color:#fff;padding:0 16px;display:flex;align-items:center;
-  border-bottom:3px solid var(--blue);position:sticky;top:0;z-index:200;gap:4px;flex-wrap:nowrap;overflow-x:auto}
-.nb{font-weight:700;font-size:13px;padding:12px 14px 12px 0;border-right:1px solid #333;margin-right:4px;white-space:nowrap}
-.nt{padding:12px 12px;cursor:pointer;color:#aaa;border-bottom:3px solid transparent;transition:all .2s;font-weight:500;white-space:nowrap}
-.nt:hover{color:#fff}
-.nt.active{color:#fff;border-bottom-color:var(--blue);background:rgba(255,255,255,0.05)}
-.nbtn{margin-left:auto;background:var(--blue);color:#fff;border:none;padding:6px 12px;border-radius:4px;
-  cursor:pointer;font-weight:600;font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
-.nbtn:hover{background:#2a79cc}
-.nbtn svg{width:14px;height:14px;fill:currentColor}
-.main{padding:16px;max-width:1400px;margin:0 auto}
-.view{display:none}
-.view.active{display:block}
-.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:16px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:16px;position:relative;overflow:hidden}
-.ct{font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:600;letter-spacing:0.5px;margin-bottom:4px}
-.cv{font-size:24px;font-weight:700;line-height:1.2}
-.cs{font-size:12px;margin-top:4px;color:var(--text2);display:flex;align-items:center;gap:4px}
-.cbar{position:absolute;bottom:0;left:0;height:4px;background:var(--border);width:100%}
-.cbar-fill{height:100%;width:0;transition:width 0.4s}
-.grid-main{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
-@media(max-width:900px){.grid-main{grid-template-columns:1fr}}
-.tsec{margin-bottom:8px;font-size:14px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px}
-.table-w{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px}
-table{width:100%;border-collapse:collapse;text-align:left}
-th,td{padding:10px 14px;border-bottom:1px solid var(--border)}
-th{background:#f8fafc;font-weight:600;color:var(--text);font-size:12px;text-transform:uppercase}
-tr:last-child td{border-bottom:none}
-.badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600}
-.bg-green{background:#e6f6f0;color:#115e43}
-.bg-amber{background:#fdf4e6;color:#8a4b08}
-.bg-red{background:#fcefee;color:#9c2a1b}
-.bg-blue{background:#eff6fc;color:#1e5180}
-.bg-purple{background:#f5f3ff;color:#4c1d95}
-.st-p{width:100%;background:#e2e5ea;height:6px;border-radius:3px;overflow:hidden;margin-top:4px}
-.st-pb{height:100%;background:var(--blue)}
-.err-item{padding:12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
-.err-item:last-child{border-bottom:none}
-.err-i{width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;display:flex;
-  align-items:center;justify-content:center;font-size:10px;font-weight:bold;flex-shrink:0;margin-top:1px}
-.err-c{flex-grow:1}
-.err-p{font-weight:600;font-size:13px}
-.err-t{color:var(--text2);font-size:12px;margin-top:2px}
-.cfg-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;background:var(--card);
-  border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:16px}
-.form-g{display:flex;flex-direction:column;gap:4px}
-.form-g label{font-size:12px;font-weight:600;color:var(--text2)}
-.form-g input,.form-g select{padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;color:var(--text)}
-.form-g input:focus,.form-g select:focus{outline:2px solid var(--blue)}
-.ch-g{display:flex;flex-direction:column;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:16px}
-.ch-r{display:flex;align-items:center;gap:12px}
-.ch-lbl{width:40px;font-weight:600;font-size:12px;color:var(--text2)}
-.ch-b-w{flex-grow:1;background:#e2e5ea;height:24px;border-radius:4px;overflow:hidden;position:relative;display:flex}
-.ch-b{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;transition:all 0.3s}
-.ch-val{width:50px;text-align:right;font-weight:600;font-size:13px}
-.slide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
-.slide-box{background:#1a1d23;color:#fff;aspect-ratio:16/9;border-radius:6px;padding:24px;display:flex;
-  flex-direction:column;justify-content:between;position:relative;border:1px solid #333;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
-.sl-h{font-size:20px;font-weight:700;border-bottom:2px solid var(--blue);padding-bottom:8px;margin-bottom:12px}
-.sl-c{flex-grow:1;font-size:13px;color:#cbd5e1;line-height:1.5}
-.sl-f{font-size:10px;color:#64748b;margin-top:auto;display:flex;justify-content:between;align-items:center}
-.sl-bullet{margin-bottom:6px;display:flex;align-items:center;gap:8px}
-.sl-bullet::before{content:"";width:6px;height:6px;background:var(--blue);border-radius:50%;display:inline-block;flex-shrink:0}
+:root {
+  --bg: #0f1115;
+  --card: #161920;
+  --border: #242936;
+  --text: #f3f4f6;
+  --text2: #9ca3af;
+  --blue: #3b82f6;
+  --green: #10b981;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --purple: #8b5cf6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; padding-bottom: 40px; }
+
+.nav { background: #11141a; border-bottom: 2px solid var(--border); padding: 0 20px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; gap: 8px; overflow-x: auto; }
+.nb { font-weight: 700; font-size: 14px; letter-spacing: 0.5px; padding: 16px 20px 16px 0; border-right: 1px solid var(--border); color: #fff; white-space: nowrap; }
+.nt { padding: 16px 16px; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; transition: all 0.2s; font-weight: 500; white-space: nowrap; }
+.nt:hover { color: #fff; }
+.nt.active { color: var(--blue); border-bottom-color: var(--blue); background: rgba(59,130,246,0.05); }
+
+.nbtn { margin-left: auto; background: var(--blue); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 8px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.nbtn:hover { background: #2563eb; }
+.nbtn svg { width: 14px; height: 14px; fill: currentColor; }
+
+.main { padding: 24px; max-width: 1600px; margin: 0 auto; }
+.view { display: none; }
+.view.active { display: block; }
+
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 24px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; overflow: hidden; }
+.ct { font-size: 11px; text-transform: uppercase; color: var(--text2); font-weight: 600; letter-spacing: 1px; margin-bottom: 6px; }
+.cv { font-size: 28px; font-weight: 700; line-height: 1.2; color: #fff; }
+.cs { font-size: 12px; margin-top: 6px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+.cbar { position: absolute; bottom: 0; left: 0; height: 4px; background: rgba(255,255,255,0.05); width: 100%; }
+.cbar-fill { height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.grid-main { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; }
+@media(max-width: 1024px){ .grid-main { grid-template-columns: 1fr; } }
+
+.tsec { margin-bottom: 12px; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: space-between; }
+.table-w { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+th { background: rgba(255,255,255,0.02); font-weight: 600; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.01); }
+
+.badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.bg-green { background: rgba(16,185,129,0.1); color: #34d399; }
+.bg-amber { background: rgba(245,158,11,0.1); color: #fbbf24; }
+.bg-red { background: rgba(239,68,68,0.1); color: #f87171; }
+.bg-blue { background: rgba(59,130,246,0.1); color: #60a5fa; }
+.bg-purple { background: rgba(139,92,246,0.1); color: #a78bfa; }
+
+.st-p { width: 120px; background: rgba(255,255,255,0.08); height: 6px; border-radius: 3px; overflow: hidden; position: relative; }
+.st-pb { height: 100%; background: var(--blue); border-radius: 3px; transition: width 0.4s; }
+
+.err-item { padding: 14px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; transition: background 0.2s; }
+.err-item:hover { background: rgba(255,255,255,0.01); }
+.err-item:last-child { border-bottom: none; }
+.err-i { width: 20px; height: 20px; border-radius: 50%; background: rgba(239,68,68,0.15); color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.err-c { flex-grow: 1; }
+.err-p { font-weight: 600; color: #fff; font-size: 13px; }
+.err-t { color: var(--text2); font-size: 12px; margin-top: 3px; line-height: 1.4; }
+
+.cfg-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+.form-g { display: flex; flex-direction: column; gap: 6px; }
+.form-g label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+.form-g input, .form-g select { padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 13px; transition: all 0.2s; }
+.form-g input:focus, .form-g select:focus { outline: none; border-color: var(--blue); background: rgba(0,0,0,0.3); }
+
+.ch-g { display: flex; flex-direction: column; gap: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.ch-r { display: flex; align-items: center; gap: 16px; }
+.ch-lbl { width: 24px; font-weight: 700; font-size: 13px; color: #fff; }
+.ch-b-w { flex-grow: 1; background: rgba(255,255,255,0.05); height: 28px; border-radius: 6px; overflow: hidden; position: relative; }
+.ch-b { height: 100%; display: flex; align-items: center; padding-left: 12px; color: #fff; font-size: 11px; font-weight: 700; transition: width 0.5s ease; border-radius: 6px; }
+.ch-val { width: 45px; text-align: right; font-weight: 600; font-size: 13px; color: #fff; }
+
+.slide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+.slide-box { background: #11141a; color: #fff; aspect-ratio: 16/9; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; position: relative; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+.sl-h { font-size: 18px; font-weight: 700; border-bottom: 2px solid var(--blue); padding-bottom: 10px; margin-bottom: 16px; color: #fff; letter-spacing: 0.5px; }
+.sl-c { flex-grow: 1; font-size: 12px; color: #cbd5e1; line-height: 1.6; }
+.sl-f { font-size: 10px; color: var(--text2); margin-top: auto; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
+.sl-bullet { margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px; }
+.sl-bullet::before { content: "•"; color: var(--blue); font-weight: bold; display: inline-block; }
 </style>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 </head>
@@ -84,7 +103,7 @@ tr:last-child td{border-bottom:none}
   <div class="nt" onclick="switchView('v-ppt',this)">Vista de Presentación</div>
   <button class="nbtn" onclick="exportPPTX()">
     <svg viewBox="0 0 24 24"><path d="M4 2h10l6 6v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v18h16V9h-5V4H4zm11 1.41L18.59 9H15V5.41zM7 11h10v2H7v-2zm0 4h10v2H7v-2z"/></svg>
-    Exportar Diapositivas PPTX
+    Exportar Presentación Completa
   </button>
 </div>
 
@@ -125,11 +144,11 @@ tr:last-child td{border-bottom:none}
           <table>
             <thead>
               <tr>
-                <th>Estante</th>
-                <th>Total Ub.</th>
+                <th>Estante / Pasillo</th>
+                <th>Total Ubicaciones</th>
                 <th>Contadas</th>
                 <th>Restantes</th>
-                <th>Avance %</th>
+                <th style="width:180px">Progreso Físico</th>
                 <th>Estado</th>
               </tr>
             </thead>
@@ -140,10 +159,10 @@ tr:last-child td{border-bottom:none}
 
       <div>
         <div class="tsec">Alertas de Captura (Bloqueantes)</div>
-        <div class="table-w" style="max-height:280px;overflow-y:auto;" id="l-malformed"></div>
+        <div class="table-w" style="max-height:280px; overflow-y:auto;" id="l-malformed"></div>
 
-        <div class="tsec" style="margin-top:16px">Omisiones en Planificación Maestra</div>
-        <div class="table-w" style="max-height:280px;overflow-y:auto;" id="l-missing"></div>
+        <div class="tsec" style="margin-top:20px">Omisiones en Planificación Maestra</div>
+        <div class="table-w" style="max-height:280px; overflow-y:auto;" id="l-missing"></div>
       </div>
     </div>
   </div>
@@ -164,9 +183,9 @@ tr:last-child td{border-bottom:none}
         <input type="number" id="cfg-hours" value="8" min="1" onchange="recalcPlan()">
       </div>
       <div class="form-g">
-        <label>Frecuencia de Actualización</label>
+        <label>Origen de Datos</label>
         <select id="cfg-freq">
-          <option>Automática / Google Sheets</option>
+          <option>Google Sheets (Sincronización Dinámica)</option>
         </select>
       </div>
     </div>
@@ -178,10 +197,10 @@ tr:last-child td{border-bottom:none}
       </div>
       <div>
         <div class="tsec">Resumen de Métricas de Planificación</div>
-        <div class="table-w" style="padding:16px;font-size:13px;line-height:1.6">
-          <p><strong>Días Hábiles Transcurridos:</strong> <span id="p-days-passed">0</span> días</p>
-          <p><strong>Días Restantes Disponibles:</strong> <span id="p-days-left">0</span> días</p>
-          <p><strong>Capacidad Requerida:</strong> <span id="p-req-rate">0</span> ubicaciones por jornada</p>
+        <div class="table-w" style="padding:20px; font-size:13px; line-height:1.8">
+          <p style="margin-bottom:8px"><strong>Días Hábiles Transcurridos:</strong> <span id="p-days-passed" style="color:#fff">0</span> días</p>
+          <p style="margin-bottom:8px"><strong>Días Restantes Disponibles:</strong> <span id="p-days-left" style="color:#fff">0</span> días</p>
+          <p style="margin-bottom:8px"><strong>Capacidad Requerida:</strong> <span id="p-req-rate" style="color:var(--blue); font-weight:700">0</span> ubicaciones por jornada</p>
           <p><strong>Desviación del Plan:</strong> <span id="p-deviation" class="badge">Estable</span></p>
         </div>
       </div>
@@ -189,7 +208,7 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <div id="v-ppt" class="view">
-    <div class="tsec" style="margin-bottom:16px">Previsualización de Reporte Ejecutivo Corporativo</div>
+    <div class="tsec" style="margin-bottom:16px">Previsualización del Reporte Corporativo (10 Diapositivas)</div>
     <div class="slide-grid" id="slide-preview-container"></div>
   </div>
 
@@ -197,7 +216,7 @@ tr:last-child td{border-bottom:none}
 
 <script>
 // ============================================================================
-// CONEXIÓN DINÁMICA A GOOGLE SHEETS (CON LECTOR INTELIGENTE)
+// REEMPLAZA ESTA URL CON TU ENLACE PUBLICADO COMO CSV DE GOOGLE SHEETS
 // ============================================================================
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCzHtLbxJBM4lZV83ggOto_44oWiBrzNlbvnce8mQtqimwsdjg9SgHdJHVzaSdTQ/pub?output=csv";
 
@@ -231,20 +250,21 @@ function parseCSV(text) {
 }
 
 function loadBackupData() {
-  console.warn("Cargando datos estáticos de respaldo...");
+  console.warn("Cargando datos de respaldo...");
   D.est_summary = {
-    "Estante 01 - Bloque A": { tot: 150, cnt: 120, rem: 30, status: "En Proceso" },
-    "Estante 02 - Bloque B": { tot: 200, cnt: 200, rem: 0, status: "Completado" },
-    "Estante 03 - Bloque C": { tot: 100, cnt: 0, rem: 100, status: "Planificado" }
+    "Estante 01 - Bloque A": { tot: 180, cnt: 145, rem: 35, status: "En Proceso" },
+    "Estante 02 - Bloque B": { tot: 240, cnt: 240, rem: 0, status: "Completado" },
+    "Estante 03 - Bloque C": { tot: 150, cnt: 20, rem: 130, status: "En Proceso" },
+    "Estante 04 - Bloque D": { tot: 210, cnt: 0, rem: 210, status: "Planificado" }
   };
-  VDATA.malformed = [{ pos: "E01-P12", txt: "Etiqueta ilegible, requiere reimpresión" }];
-  VDATA.missing = [{ pos: "E03-P05", txt: "Posición física ocupada, no figura en maestro" }];
+  VDATA.malformed = [{ pos: "E01-P12", txt: "Etiqueta corrupta, no enlaza al sistema base" }];
+  VDATA.missing = [{ pos: "E03-P45", txt: "Ubicación con stock físico pero ausente en plan maestro" }];
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   fetch(SHEET_CSV_URL)
     .then(response => {
-      if (!response.ok) throw new Error("Fallo de conexión");
+      if (!response.ok) throw new Error("Fallo en red");
       return response.text();
     })
     .then(csvText => {
@@ -254,15 +274,14 @@ window.addEventListener('DOMContentLoaded', () => {
       VDATA.missing = [];
 
       rows.forEach(fila => {
-        // LECTOR INTELIGENTE: Busca coincidencias parciales sin importar mayúsculas
         const keys = Object.keys(fila);
         const getVal = (keywords) => {
           const key = keys.find(k => keywords.some(kw => k.toLowerCase().includes(kw)));
           return key ? fila[key] : null;
         };
 
-        const estante = getVal(['estant', 'zona', 'rack', 'linea']);
-        const total = getVal(['total', 'universo', 'ub']);
+        const estante = getVal(['estant', 'zona', 'rack', 'linea', 'pasillo']);
+        const total = getVal(['total', 'universo', 'ub', 'cantidad']);
         const contados = getVal(['contad', 'avance', 'listo']);
         const quedan = getVal(['quedan', 'restan', 'pendient']);
         const estado = getVal(['estado', 'status', 'estatus']);
@@ -272,7 +291,7 @@ window.addEventListener('DOMContentLoaded', () => {
             tot: parseInt(total) || 0,
             cnt: parseInt(contados) || 0,
             rem: parseInt(quedan) || 0,
-            status: estado || "Pendiente"
+            status: estado || "Planificado"
           };
         }
 
@@ -282,19 +301,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (tipoError && typeof tipoError === 'string') {
           const tLower = tipoError.toLowerCase();
-          if (tLower.includes('captura') || tLower.includes('lectura')) {
-            VDATA.malformed.push({ pos: posicion || "N/A", txt: detalle || "Error en codificación" });
-          } else if (tLower.includes('ausent') || tLower.includes('omis')) {
-            VDATA.missing.push({ pos: posicion || "N/A", txt: detalle || "Falta en maestro" });
+          if (tLower.includes('captura') || tLower.includes('lectura') || tLower.includes('bloque')) {
+            VDATA.malformed.push({ pos: posicion || "Desconocido", txt: detalle || "Fallo estructural" });
+          } else if (tLower.includes('ausent') || tLower.includes('omis') || tLower.includes('maestro')) {
+            VDATA.missing.push({ pos: posicion || "Desconocido", txt: detalle || "Falta asignación" });
           }
         }
       });
 
-      // Si el archivo viene en blanco, cargamos datos de muestra para no perder el visual
       if (Object.keys(D.est_summary).length === 0) {
         loadBackupData();
       }
-
       initAll();
     })
     .catch(err => {
@@ -312,9 +329,6 @@ function initAll() {
   renderSlidePreviews();
 }
 
-// ============================================================================
-// LÓGICA DE CÁLCULO E INTERFAZ INTACTA
-// ============================================================================
 var CUR = { daysPassed: 5, daysLeft: 15, reqRate: 20, deviation: "Estable", globalProgress: 0 };
 
 function getWorkingDays(start, end) {
@@ -390,16 +404,16 @@ function updateSummaryCards() {
   if(ira < 0) ira = 0;
   
   document.getElementById('kpi-i-av').innerText = ira + "%";
-  document.getElementById('kpi-i-sub').innerText = totalErr + " discrepancias detectadas";
+  document.getElementById('kpi-i-sub').innerText = totalErr + " discrepancias de inventario";
   document.getElementById('kpi-i-bar').style.width = ira + "%";
   
   document.getElementById('kpi-t-av').innerText = CUR.daysLeft + " días";
-  document.getElementById('kpi-t-sub').innerText = "Ritmo actual: " + CUR.reqRate + " ub/día";
+  document.getElementById('kpi-t-sub').innerText = "Meta diaria: " + CUR.reqRate + " posiciones";
   document.getElementById('kpi-t-bar').style.width = Math.round((CUR.daysLeft / 20)*100) + "%";
   
   document.getElementById('kpi-a-av').innerText = totalErr;
-  document.getElementById('kpi-a-sub').innerText = "Hallazgos críticos pendientes";
-  document.getElementById('kpi-a-bar').style.width = Math.min(100, totalErr * 10) + "%";
+  document.getElementById('kpi-a-sub').innerText = "Desviaciones en terreno";
+  document.getElementById('kpi-a-bar').style.width = Math.min(100, totalErr * 15) + "%";
 }
 
 function drawShelfTable() {
@@ -422,8 +436,8 @@ function drawShelfTable() {
                    "<td>" + s.cnt + "</td>" +
                    "<td>" + s.rem + "</td>" +
                    "<td>" +
-                     "<div style='display:flex;align-items:center;gap:8px'>" +
-                       "<span style='width:30px;font-weight:600'>" + pct + "%</span>" +
+                     "<div style='display:flex;align-items:center;gap:10px'>" +
+                       "<span style='width:35px;font-weight:600;color:#fff'>" + pct + "%</span>" +
                        "<div class='st-p'><div class='st-pb' style='width:" + pct + "%'></div></div>" +
                      "</div>" +
                    "</td>" +
@@ -437,7 +451,7 @@ function drawPendTable() {
   if(lm) {
     lm.innerHTML = "";
     if(VDATA.malformed.length === 0) {
-      lm.innerHTML = "<div style='padding:14px;text-align:center;color:var(--text2);'>No hay errores estructurales detectados</div>";
+      lm.innerHTML = "<div style='padding:20px;text-align:center;color:var(--text2);'>No hay errores estructurales</div>";
     } else {
       VDATA.malformed.forEach(function(item) {
         var div = document.createElement('div');
@@ -452,12 +466,12 @@ function drawPendTable() {
   if(lmi) {
     lmi.innerHTML = "";
     if(VDATA.missing.length === 0) {
-      lmi.innerHTML = "<div style='padding:14px;text-align:center;color:var(--text2);'>No hay omisiones críticas</div>";
+      lmi.innerHTML = "<div style='padding:20px;text-align:center;color:var(--text2);'>No hay omisiones registradas</div>";
     } else {
       VDATA.missing.forEach(function(item) {
         var div = document.createElement('div');
         div.className = "err-item";
-        div.innerHTML = "<div class='err-i' style='background:var(--amber)'>?</div><div class='err-c'><div class='err-p'>" + item.pos + "</div><div class='err-t'>" + item.txt + "</div></div>";
+        div.innerHTML = "<div class='err-i' style='background:rgba(245,158,11,0.15);color:var(--amber)'>?</div><div class='err-c'><div class='err-p'>" + item.pos + "</div><div class='err-t'>" + item.txt + "</div></div>";
         lmi.appendChild(div);
       });
     }
@@ -468,7 +482,7 @@ function drawABCChart() {
   var container = document.getElementById('abc-chart-container');
   if(!container) return;
   container.innerHTML = "";
-  var abcData = [ { label: "A", val: 45, col: "var(--red)" }, { label: "B", val: 35, col: "var(--amber)" }, { label: "C", val: 20, col: "var(--green)" } ];
+  var abcData = [ { label: "A", val: 50, col: "var(--red)" }, { label: "B", val: 30, col: "var(--amber)" }, { label: "C", val: 20, col: "var(--green)" } ];
   abcData.forEach(function(item) {
     var r = document.createElement('div');
     r.className = "ch-r";
@@ -492,16 +506,16 @@ function getSlideData() {
   var ila = totalCnt > 0 ? Math.round(((totalCnt - totalErr) / totalCnt) * 100) : 100;
   
   return [
-    { title: "1. Portada — Conteo Cíclico", content: "• Reporte de control de inventarios.\n• Sincronización dinámica.\n• Análisis de confiabilidad." },
-    { title: "2. Resumen Ejecutivo", content: "• Avance físico del ciclo: " + CUR.globalProgress + "%.\n• Confiabilidad global IRA: " + ila + "%.\n• " + totalErr + " desviaciones operativas." },
-    { title: "3. Avance de la Malla", content: "• " + totalCnt + " posiciones verificadas.\n• Quedan " + (totalUb - totalCnt) + " ubicaciones en plan.\n• Desviación actual: " + CUR.deviation + "." },
-    { title: "4. Ritmo Operativo", content: "• Días hábiles completados: " + CUR.daysPassed + " días.\n• Ventana restante: " + CUR.daysLeft + " días.\n• Ritmo meta: " + CUR.reqRate + " ubicaciones / jornada." },
-    { title: "5. Estrategia ABC", content: "• Zona A (Alta Rotación): Diario.\n• Zona B (Media Rotación): Semanal.\n• Zona C (Baja Rotación): Ciclo base." },
-    { title: "6. Análisis por Estante", content: "• Monitoreo activo sobre " + Object.keys(D.est_summary).length + " bloques estructurados.\n• Seguimiento visual en tiempo real." },
-    { title: "7. Alertas de Captura", content: "• Errores de lectura de código: " + VDATA.malformed.length + " hallazgos.\n• Requieren corrección de etiqueta." },
-    { title: "8. Omisiones de Base", content: "• Pallets no listados en planificación: " + VDATA.missing.length + " alertas.\n• Inconsistencia con el WMS." },
-    { title: "9. Plan de Acción", content: "• Saneamiento de posiciones.\n• Ajuste de ruteo para estantes con retraso." },
-    { title: "10. Próximos Pasos", content: "• Mantener meta de exactitud.\n• Cierre de ciclo sincronizado." }
+    { title: "1. Control de Inventario Colgate", content: "• Reporte Ejecutivo de Resultados.\n• Estado de avance de conteos cíclicos.\n• Monitoreo dinámico de confiabilidad." },
+    { title: "2. Estado General del Ciclo", content: "• Avance físico global: " + CUR.globalProgress + "%.\n• Confiabilidad del Registro (IRA): " + ila + "%.\n• " + totalErr + " discrepancias operativas en terreno." },
+    { title: "3. Avance Físico Estructurado", content: "• " + totalCnt + " posiciones físicas validadas con éxito.\n• Universo pendiente: " + (totalUb - totalCnt) + " ubicaciones por procesar.\n• Nivel de cumplimiento: " + CUR.deviation + "." },
+    { title: "4. Capacidad y Ritmo Diario", content: "• Ventana de tiempo completada: " + CUR.daysPassed + " días.\n• Días disponibles restantes: " + CUR.daysLeft + " días hábiles.\n• Ritmo diario objetivo: " + CUR.reqRate + " posiciones / jornada." },
+    { title: "5. Distribución Estratégica ABC", content: "• Clasificación por nivel de rotación de SKUs.\n• Zona A (Crítica): Revisión sistemática de alta prioridad.\n• Zonas B y C: Mapeo controlado según plan." },
+    { title: "6. Resumen de Cobertura de Estantes", content: "• Análisis granular sobre los racks logísticos activos.\n• Visualización de desviaciones críticas por pasillo.\n• Control visual directo del WMS." },
+    { title: "7. Desviaciones por Error de Captura", content: "• Códigos de barra corruptos detectados: " + VDATA.malformed.length + " posiciones.\n• Bloquean la trazabilidad en terminales de radiofrecuencia." },
+    { title: "8. Omisiones de Planificación", content: "• Posiciones físicas con stock real omitidas en maestro: " + VDATA.missing.length + " alertas.\n• Requieren regularización y carga inmediata." },
+    { title: "9. Plan de Saneamiento Operativo", content: "• Plan de acción enfocado en corrección de etiquetas en terreno.\n• Conciliación de inventarios cruzados con el área de Calidad." },
+    { title: "10. Próximos Pasos del Ciclo", content: "• Sostener la meta de exactitud IRA sobre el 95%.\n• Mitigar retrasos en estantes críticos durante la ventana restante." }
   ];
 }
 
@@ -514,42 +528,50 @@ function renderSlidePreviews() {
     var box = document.createElement('div');
     box.className = "slide-box";
     var bulletsHTML = s.content.split('\n').map(function(b) { return "<div class='sl-bullet'>" + b.replace('• ', '') + "</div>"; }).join('');
-    box.innerHTML = "<div class='sl-h'>" + s.title + "</div><div class='sl-c'>" + bulletsHTML + "</div><div class='sl-f'><span>Colgate Supply Chain Team</span><span>Pág. " + (idx+1) + "</span></div>";
+    box.innerHTML = "<div class='sl-h'>" + s.title + "</div><div class='sl-c'>" + bulletsHTML + "</div><div class='sl-f'><span>Colgate Logistics & Supply Chain</span><span>Slide " + (idx+1) + "</span></div>";
     container.appendChild(box);
   });
 }
 
 function exportPPTX() {
-  var pres = new PptxGenJS(); pres.layout = "LAYOUT_16x9";
-  var BLUE = "1A1D23", WHITE = "FFFFFF", RED = "D85A30", AMBER = "BA7517", GREEN = "1D9E75";
+  var pres = new PptxGenJS(); 
+  pres.layout = "LAYOUT_16x9";
+  
+  var BLUE = "11141A", WHITE = "FFFFFF", RED = "EF4444", AMBER = "F59E0B", GREEN = "10B981";
   var totalUb = 0, totalCnt = 0;
   for(var k in D.est_summary) { totalUb += D.est_summary[k].tot; totalCnt += D.est_summary[k].cnt; }
   var totalErr = VDATA.malformed.length + VDATA.missing.length;
   var ila = totalCnt > 0 ? Math.round(((totalCnt - totalErr) / totalCnt) * 100) : 100;
-  
-  var s1 = pres.addSlide(); s1.background = { color: BLUE };
-  s1.addText("CONTEO CÍCLICO — COLGATE", { x:1.0, y:2.2, w:11.3, h:1.0, fontSize:40, bold:true, color:"4c9eff" });
-  s1.addText("Reporte Ejecutivo de Control e Indicador IRA", { x:1.0, y:3.3, w:11.3, h:0.5, fontSize:18, color:"94a3b8" });
-  s1.addText("Generado el " + new Date().toLocaleDateString('es-CL'), { x:1.0, y:5.8, w:8.0, h:0.4, fontSize:12, color:WHITE });
 
-  var s2 = pres.addSlide(); s2.background = { color: "F4F5F7" };
-  s2.addText("RESUMEN EJECUTIVO", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
-  var kpis = [
-    { title: "AVANCE FÍSICO", val: CUR.globalProgress+"%", sub: totalCnt+" de "+totalUb+" ub.", col: "378add" },
-    { title: "EXACTITUD IRA", val: ila+"%", sub: totalErr+" discrepancias", col: "1d9e75" },
-    { title: "TIEMPO RESTANTE", val: CUR.daysLeft+" Días", sub: "Ritmo: "+CUR.reqRate+" ub/día", col: "ba7517" },
-    { title: "ALERTAS CRÍTICAS", val: totalErr, sub: VDATA.malformed.length+" bloqueos", col: "d85a30" }
-  ];
-  kpis.forEach(function(k, idx) {
-    var cx = 0.6 + (idx * 2.9);
-    s2.addShape(pres.ShapeType.rect, { x:cx, y:1.3, w:2.7, h:1.8, fill:{color:WHITE}, line:{color:"E2E5EA", width:1} });
-    s2.addText(k.title, { x:cx+0.15, y:1.4, w:2.4, h:0.3, fontSize:11, bold:true, color:"6b7280" });
-    s2.addText(k.val, { x:cx+0.15, y:1.7, w:2.4, h:0.6, fontSize:32, bold:true, color:k.col });
-    s2.addText(k.sub, { x:cx+0.15, y:2.4, w:2.4, h:0.5, fontSize:11, color:"4b5563" });
-    s2.addShape(pres.ShapeType.rect, { x:cx, y:3.0, w:2.7, h:0.1, fill:{color:k.col}, line:{type:"none"} });
+  var slidesData = getSlideData();
+
+  slidesData.forEach(function(s, idx) {
+    var slide = pres.addSlide();
+    slide.background = { color: BLUE };
+
+    // Encabezado
+    slide.addText(s.title.toUpperCase(), { x: 0.8, y: 0.5, w: 11.5, h: 0.6, fontSize: 24, bold: true, color: "3B82F6", fontFace: "Calibri" });
+    
+    // Línea separadora decorativa
+    slide.addShape(pres.ShapeType.rect, { x: 0.8, y: 1.2, w: 11.7, h: 0.04, fill: { color: "242936" }, line: { type: "none" } });
+
+    // Contenido estructurado en viñetas
+    var bullets = s.content.split('\n');
+    var iy = 1.8;
+    bullets.forEach(function(b) {
+      var textClean = b.replace('• ', '');
+      slide.addShape(pres.ShapeType.ellipse, { x: 0.8, y: iy + 0.05, w: 0.15, h: 0.15, fill: { color: "3B82F6" }, line: { type: "none" } });
+      slide.addText(textClean, { x: 1.2, y: iy, w: 11.0, h: 0.5, fontSize: 16, color: WHITE, fontFace: "Calibri" });
+      iy += 0.8;
+    });
+
+    // Pie de diapositiva
+    slide.addShape(pres.ShapeType.rect, { x: 0.8, y: 6.7, w: 11.7, h: 0.02, fill: { color: "242936" }, line: { type: "none" } });
+    slide.addText("Dashboard Conteo Cíclico Colgate  ·  Confidencial", { x: 0.8, y: 6.8, w: 8.0, h: 0.3, fontSize: 10, color: "9CA3AF", fontFace: "Calibri" });
+    slide.addText("Pág. " + (idx + 1), { x: 11.0, y: 6.8, w: 1.5, h: 0.3, fontSize: 10, color: "9CA3AF", align: "right", fontFace: "Calibri" });
   });
 
-  pres.writeFile({ fileName: "Reporte_Ciclico_" + new Date().toISOString().slice(0,10) });
+  pres.writeFile({ fileName: "Reporte_Ejecutivo_Ciclico_" + new Date().toISOString().slice(0,10) });
 }
 </script>
 
