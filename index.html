@@ -1,37 +1,31 @@
 <script>
-  // Pega aquí la NUEVA URL que obtuviste al implementar
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxNg-Kbw7LCPwiA6h3YvftMnZ4lYsglT217i8kFXI2SLulQDtma2JfTLnBHHEYWSNqz/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbzVM_zbrY2rlTv6pOFV9JQKnSdtwh848BdfnNuFWpz4b9VyhjuqQhiqOlbC8MJRyBZg/exec";
 
-  function cargarDatos() {
-    var script = document.createElement('script');
-    // El "?callback=procesarDatos" es la clave mágica
-    script.src = SCRIPT_URL + "?callback=procesarDatos";
-    document.body.appendChild(script);
-  }
+  fetch(API_URL)
+    .then(response => response.json())
+    .then(data => {
+      // 1. Cálculos automáticos
+      const totalSKU = data.length;
+      const pendientes = data.filter(item => parseFloat(item["DIFERENCIA"]) !== 0);
 
-  function procesarDatos(data) {
-    console.log("Datos recibidos:", data);
+      // 2. Inyección en tu diseño (asegura que estos IDs existan en tu HTML)
+      if(document.getElementById("valor-total")) 
+        document.getElementById("valor-total").innerText = totalSKU;
+      if(document.getElementById("valor-pendientes")) 
+        document.getElementById("valor-pendientes").innerText = pendientes.length;
 
-    // Cálculos
-    const pendientes = data.filter(item => parseFloat(item["DIFERENCIA"]) !== 0);
-    
-    // Inyección en tus IDs (ajusta los IDs si los tuyos son diferentes)
-    if(document.getElementById("valor-total")) document.getElementById("valor-total").innerText = data.length;
-    if(document.getElementById("valor-pendientes")) document.getElementById("valor-pendientes").innerText = pendientes.length;
-
-    // Tabla
-    const tbody = document.getElementById("cuerpo-tabla");
-    if(tbody) {
-      tbody.innerHTML = "";
-      pendientes.forEach(item => {
-        tbody.innerHTML += `<tr>
-          <td>${item["ITDESC"]}</td>
-          <td>${item["UBIEST"]}</td>
-          <td>${item["DIFERENCIA"]}</td>
-        </tr>`;
-      });
-    }
-  }
-
-  window.onload = cargarDatos;
+      // 3. Tabla dinámica
+      const tbody = document.getElementById("cuerpo-tabla");
+      if(tbody) {
+        tbody.innerHTML = "";
+        pendientes.forEach(item => {
+          tbody.innerHTML += `<tr>
+            <td>${item["ITDESC"] || ''}</td>
+            <td>${item["UBIEST"] || ''}</td>
+            <td>${item["DIFERENCIA"] || '0'}</td>
+          </tr>`;
+        });
+      }
+    })
+    .catch(err => console.error("Error de conexión:", err));
 </script>
