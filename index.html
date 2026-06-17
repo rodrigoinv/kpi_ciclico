@@ -1,41 +1,39 @@
 <script>
-  // Tu URL de la API
   const API_URL = "https://script.google.com/macros/s/AKfycbxNg-Kbw7LCPwiA6h3YvftMnZ4lYsglT217i8kFXI2SLulQDtma2JfTLnBHHEYWSNqz/exec";
 
   async function actualizarDashboard() {
     try {
-      // Usamos una técnica llamada 'no-cors' o simplemente fetch directo si el script tiene el header correcto
       const response = await fetch(API_URL);
       const data = await response.json();
 
-      // CÁLCULOS
-      const totalRegistros = data.length;
+      // 1. Cálculos de tus indicadores (basados en tus columnas ITDESC, UBIEST, DIFERENCIA, OBSERVACIONES)
+      const totalSKU = data.length;
       const pendientes = data.filter(item => parseFloat(item["DIFERENCIA"]) !== 0);
+      
+      // 2. Actualizar los elementos visuales (ID's que ya existen en tu HTML)
+      // Nota: Si tus IDs son distintos, cámbialos aquí:
+      if(document.getElementById("valor-total")) document.getElementById("valor-total").innerText = totalSKU;
+      if(document.getElementById("valor-pendientes")) document.getElementById("valor-pendientes").innerText = pendientes.length;
 
-      // ACTUALIZACIÓN DEL DOM (Asegúrate de que estos ID existan en tu HTML)
-      // Si tus elementos tienen otros IDs, cámbialos aquí:
-      if(document.getElementById("valor-total")) 
-         document.getElementById("valor-total").innerText = totalRegistros;
-         
-      if(document.getElementById("valor-pendientes")) 
-         document.getElementById("valor-pendientes").innerText = pendientes.length;
-
-      // Llenar tabla (Asegúrate de tener un <tbody id="cuerpo-tabla">)
-      const tabla = document.getElementById("cuerpo-tabla");
-      if(tabla) {
-        tabla.innerHTML = "";
+      // 3. Llenar la tabla de detalles
+      const tablaBody = document.getElementById("cuerpo-tabla");
+      if(tablaBody) {
+        tablaBody.innerHTML = ""; 
         pendientes.forEach(item => {
-          tabla.innerHTML += `<tr>
-            <td>${item["ITDESC"]}</td>
-            <td>${item["UBIEST"]}</td>
-            <td>${item["DIFERENCIA"]}</td>
+          tablaBody.innerHTML += `<tr>
+            <td>${item["ITDESC"] || ''}</td>
+            <td>${item["UBIEST"] || ''}</td>
+            <td>${item["DIFERENCIA"] || '0'}</td>
+            <td>${item["OBSERVACIONES"] || ''}</td>
           </tr>`;
         });
       }
+      console.log("Dashboard actualizado con éxito");
     } catch (error) {
-      console.error("Error al cargar datos:", error);
+      console.error("Error al conectar:", error);
     }
   }
 
+  // Ejecutar automáticamente al cargar
   window.onload = actualizarDashboard;
 </script>
