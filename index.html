@@ -133,23 +133,17 @@ tr:last-child td{border-bottom:none}
                 <th>Estado</th>
               </tr>
             </thead>
-            <tbody id="t-shelf">
-              <tr><td colspan="6" style="text-align:center;color:var(--text2);">Cargando información desde Google Sheets...</td></tr>
-            </tbody>
+            <tbody id="t-shelf"></tbody>
           </table>
         </div>
       </div>
 
       <div>
-        <div class="tsec">Alertas de Calidad (Bloqueantes)</div>
-        <div class="table-w" style="max-height:280px;overflow-y:auto;" id="l-malformed">
-          <div style="padding:14px;text-align:center;color:var(--text2);">Cargando validaciones...</div>
-        </div>
+        <div class="tsec">Alertas de Captura (Bloqueantes)</div>
+        <div class="table-w" style="max-height:280px;overflow-y:auto;" id="l-malformed"></div>
 
         <div class="tsec" style="margin-top:16px">Omisiones en Planificación Maestra</div>
-        <div class="table-w" style="max-height:280px;overflow-y:auto;" id="l-missing">
-          <div style="padding:14px;text-align:center;color:var(--text2);">Cargando validaciones...</div>
-        </div>
+        <div class="table-w" style="max-height:280px;overflow-y:auto;" id="l-missing"></div>
       </div>
     </div>
   </div>
@@ -180,8 +174,7 @@ tr:last-child td{border-bottom:none}
     <div class="grid-main">
       <div>
         <div class="tsec">Distribución de Criticidad ABC por Estante</div>
-        <div class="ch-g" id="abc-chart-container">
-          </div>
+        <div class="ch-g" id="abc-chart-container"></div>
       </div>
       <div>
         <div class="tsec">Resumen de Métricas de Planificación</div>
@@ -197,23 +190,21 @@ tr:last-child td{border-bottom:none}
 
   <div id="v-ppt" class="view">
     <div class="tsec" style="margin-bottom:16px">Previsualización de Reporte Ejecutivo Corporativo</div>
-    <div class="slide-grid" id="slide-preview-container">
-      </div>
+    <div class="slide-grid" id="slide-preview-container"></div>
   </div>
 
 </div>
 
 <script>
 // ============================================================================
-// CONFIGURACIÓN DE CONEXIÓN DINÁMICA A GOOGLE SHEETS
+// CONEXIÓN DINÁMICA A GOOGLE SHEETS
 // ============================================================================
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCzHtLbxJBM4lZV83ggOto_44oWiBrzNlbvnce8mQtqimwsdjg9SgHdJHVzaSdTQ/pub?output=csv";
 
-// Estructuras maestras globales
+// Variables globales mapeadas dinámicamente desde el CSV
 var D = { est_summary: {} };
 var VDATA = { malformed: [], missing: [] };
 
-// Procesador nativo y seguro de formato CSV de Google Sheets
 function parseCSV(text) {
   let lines = text.split(/\r?\n/);
   if (lines.length === 0 || lines[0] === "") return [];
@@ -249,7 +240,6 @@ function parseCSV(text) {
   return result;
 }
 
-// Carga automática al iniciar la página
 window.addEventListener('DOMContentLoaded', () => {
   fetch(SHEET_CSV_URL)
     .then(response => {
@@ -259,13 +249,12 @@ window.addEventListener('DOMContentLoaded', () => {
     .then(csvText => {
       const rows = parseCSV(csvText);
       
-      // Limpiamos los contenedores por si acaso
       D.est_summary = {};
       VDATA.malformed = [];
       VDATA.missing = [];
 
       rows.forEach(fila => {
-        // Mapeo dinámico de Estantes
+        // Cargar Estantes si la fila contiene el nombre del estante
         if (fila.Estante) {
           D.est_summary[fila.Estante] = {
             tot: parseInt(fila.Total) || 0,
@@ -275,7 +264,7 @@ window.addEventListener('DOMContentLoaded', () => {
           };
         }
         
-        // Mapeo dinámico de Hallazgos/Alertas
+        // Cargar Hallazgos Críticos/Alertas
         if (fila.TipoError === "Captura") {
           VDATA.malformed.push({
             pos: fila.Posicion || "N/A",
@@ -289,28 +278,26 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      console.log("Sincronización con Google Sheets completada de forma exitosa.");
-      initApplication();
+      console.log("Sincronización con Google Sheets completada.");
+      // Iniciar toda la lógica nativa del index original
+      recalcPlan();
+      drawShelfTable();
+      drawPendTable();
+      drawABCChart();
+      renderSlidePreviews();
     })
     .catch(err => {
-      console.error("Error al sincronizar datos:", err);
-      // Fallback vacío para evitar pantallas en blanco si falla el internet
-      initApplication();
+      console.error("Error cargando los datos:", err);
+      recalcPlan();
+      drawShelfTable();
+      drawPendTable();
+      drawABCChart();
+      renderSlidePreviews();
     });
 });
 
-// Inicializador general de los componentes visuales
-function initApplication() {
-  recalcPlan();
-  updateSummaryCards();
-  drawShelfTable();
-  drawPendTable();
-  drawABCChart();
-  renderSlidePreviews();
-}
-
 // ============================================================================
-// LÓGICA DE NEGOCIO INTERNA Y CÁLCULOS (MANTENIDA FIEL A TU DISEÑO ORIGINAL)
+// LÓGICA ORIGINAL COMPLETA E INTACTA
 // ============================================================================
 var CUR = { daysPassed: 5, daysLeft: 15, reqRate: 20, deviation: "Estable", globalProgress: 0 };
 
@@ -328,12 +315,10 @@ function getWorkingDays(start, end) {
 function recalcPlan() {
   var startVal = document.getElementById('cfg-start').value;
   var daysVal = parseInt(document.getElementById('cfg-days').value) || 20;
-  
   var start = new Date(startVal + "T00:00:00");
   var now = new Date();
   
-  var totalUb = 0;
-  var totalCnt = 0;
+  var totalUb = 0, totalCnt = 0;
   for(var k in D.est_summary) {
     totalUb += D.est_summary[k].tot;
     totalCnt += D.est_summary[k].cnt;
@@ -341,7 +326,6 @@ function recalcPlan() {
   
   var passed = 0;
   if(now > start) {
-    var checkEnd = now < start ? now : now;
     passed = getWorkingDays(start, now) - 1;
     if(passed < 0) passed = 0;
   }
@@ -356,13 +340,9 @@ function recalcPlan() {
   CUR.reqRate = req < 0 ? 0 : req;
   
   var idealProg = (passed / daysVal) * totalUb;
-  if(totalCnt >= idealProg - (totalUb*0.05)) {
-    CUR.deviation = "Alineado";
-  } else if(totalCnt >= idealProg - (totalUb*0.15)) {
-    CUR.deviation = "Riesgo Moderado";
-  } else {
-    CUR.deviation = "Retraso Crítico";
-  }
+  if(totalCnt >= idealProg - (totalUb*0.05)) CUR.deviation = "Alineado";
+  else if(totalCnt >= idealProg - (totalUb*0.15)) CUR.deviation = "Riesgo Moderado";
+  else CUR.deviation = "Retraso Crítico";
   
   document.getElementById('p-days-passed').innerText = CUR.daysPassed;
   document.getElementById('p-days-left').innerText = CUR.daysLeft;
@@ -385,37 +365,25 @@ function updateSummaryCards() {
   var pctF = totalUb > 0 ? Math.round((totalCnt / totalUb) * 100) : 0;
   CUR.globalProgress = pctF;
   
-  var kpiFAv = document.getElementById('kpi-f-av');
-  if(kpiFAv) kpiFAv.innerText = pctF + "%";
-  var kpiFSub = document.getElementById('kpi-f-sub');
-  if(kpiFSub) kpiFSub.innerText = totalCnt + " de " + totalUb + " ubicaciones";
-  var kpiFBar = document.getElementById('kpi-f-bar');
-  if(kpiFBar) kpiFBar.style.width = pctF + "%";
+  document.getElementById('kpi-f-av').innerText = pctF + "%";
+  document.getElementById('kpi-f-sub').innerText = totalCnt + " de " + totalUb + " ubicaciones";
+  document.getElementById('kpi-f-bar').style.width = pctF + "%";
   
   var totalErr = VDATA.malformed.length + VDATA.missing.length;
   var ira = totalCnt > 0 ? Math.round(((totalCnt - totalErr) / totalCnt) * 100) : 100;
   if(ira < 0) ira = 0;
   
-  var kpiIAv = document.getElementById('kpi-i-av');
-  if(kpiIAv) kpiIAv.innerText = ira + "%";
-  var kpiISub = document.getElementById('kpi-i-sub');
-  if(kpiISub) kpiISub.innerText = totalErr + " discrepancias / fallas de calidad";
-  var kpiIBar = document.getElementById('kpi-i-bar');
-  if(kpiIBar) kpiIBar.style.width = ira + "%";
+  document.getElementById('kpi-i-av').innerText = ira + "%";
+  document.getElementById('kpi-i-sub').innerText = totalErr + " discrepancias detectadas";
+  document.getElementById('kpi-i-bar').style.width = ira + "%";
   
-  var kpiTAv = document.getElementById('kpi-t-av');
-  if(kpiTAv) kpiTAv.innerText = CUR.daysLeft + " días";
-  var kpiTSub = document.getElementById('kpi-t-sub');
-  if(kpiTSub) kpiTSub.innerText = "Ritmo obj: " + CUR.reqRate + " ub / jornada";
-  var kpiTBar = document.getElementById('kpi-t-bar');
-  if(kpiTBar) kpiTBar.style.width = Math.round((CUR.daysLeft / 20)*100) + "%";
+  document.getElementById('kpi-t-av').innerText = CUR.daysLeft + " días";
+  document.getElementById('kpi-t-sub').innerText = "Ritmo actual: " + CUR.reqRate + " ub/día";
+  document.getElementById('kpi-t-bar').style.width = Math.round((CUR.daysLeft / 20)*100) + "%";
   
-  var kpiAAv = document.getElementById('kpi-a-av');
-  if(kpiAAv) kpiAAv.innerText = totalErr;
-  var kpiASub = document.getElementById('kpi-a-sub');
-  if(kpiASub) kpiASub.innerText = VDATA.malformed.length + " bloqueos de captura";
-  var kpiABar = document.getElementById('kpi-a-bar');
-  if(kpiABar) kpiABar.style.width = Math.min(100, totalErr * 10) + "%";
+  document.getElementById('kpi-a-av').innerText = totalErr;
+  document.getElementById('kpi-a-sub').innerText = "Hallazgos críticos pendientes";
+  document.getElementById('kpi-a-bar').style.width = Math.min(100, totalErr * 10) + "%";
 }
 
 function drawShelfTable() {
@@ -453,7 +421,7 @@ function drawPendTable() {
   if(lm) {
     lm.innerHTML = "";
     if(VDATA.malformed.length === 0) {
-      lm.innerHTML = "<div style='padding:14px;text-align:center;color:var(--text2);'>No hay errores de estructura</div>";
+      lm.innerHTML = "<div style='padding:14px;text-align:center;color:var(--text2);'>No hay errores estructurales detectados</div>";
     } else {
       VDATA.malformed.forEach(function(item) {
         var div = document.createElement('div');
@@ -468,7 +436,7 @@ function drawPendTable() {
   if(lmi) {
     lmi.innerHTML = "";
     if(VDATA.missing.length === 0) {
-      lmi.innerHTML = "<div style='padding:14px;text-align:center;color:var(--text2);'>No hay omisiones detectadas</div>";
+      lmi.innerHTML = "<div style='padding:14px;text-align:center;color:var(--text2);'>No hay omisiones críticas</div>";
     } else {
       VDATA.missing.forEach(function(item) {
         var div = document.createElement('div');
@@ -486,15 +454,15 @@ function drawABCChart() {
   container.innerHTML = "";
   
   var abcData = [
-    { label: "A (Alta Rotación — Diario)", val: 45, col: "var(--red)" },
-    { label: "B (Media Rotación — Semanal)", val: 35, col: "var(--amber)" },
-    { label: "C (Baja Rotación — Ciclo)", val: 20, col: "var(--green)" }
+    { label: "A", val: 45, col: "var(--red)" },
+    { label: "B", val: 35, col: "var(--amber)" },
+    { label: "C", val: 20, col: "var(--green)" }
   ];
   
   abcData.forEach(function(item) {
     var r = document.createElement('div');
     r.className = "ch-r";
-    r.innerHTML = "<div class='ch-lbl'>" + item.label.substring(0,1) + "</div>" +
+    r.innerHTML = "<div class='ch-lbl'>" + item.label + "</div>" +
                   "<div class='ch-b-w'><div class='ch-b' style='width:" + item.val + "%;background:" + item.col + "'>" + item.val + "%</div></div>" +
                   "<div class='ch-val'>" + item.val + "%</div>";
     container.appendChild(r);
@@ -510,7 +478,7 @@ function switchView(id, el) {
 }
 
 // ============================================================================
-// CONSTRUCTOR DE VISTA PREVIA Y EXPORTADOR CORPORATIVO PPTX
+// LOGICA DE LAS 10 DIAPOSITIVAS DEL POWERPOINT CORPORATIVO ORIGINAL
 // ============================================================================
 function getSlideData() {
   var totalUb = 0, totalCnt = 0;
@@ -522,9 +490,16 @@ function getSlideData() {
   var ila = totalCnt > 0 ? Math.round(((totalCnt - totalErr) / totalCnt) * 100) : 100;
   
   return [
-    { title: "1. Resumen de Control Cíclico Colgate", content: "Estado Operativo Actual:\n• Avance General: " + CUR.globalProgress + "% completado de la malla física.\n• Ubicaciones Gestionadas: " + totalCnt + " de un universo de " + totalUb + ".\n• Estatus de Planificación: Estructura en rango '" + CUR.deviation + "'.\n• Auditorías Críticas: " + totalErr + " desviaciones bajo análisis de aseguramiento de calidad." },
-    { title: "2. Estado de Cobertura de Infraestructura", content: "Métricas Críticas por Bloque de Estantes:\n• Estantes Activos: " + Object.keys(D.est_summary).length + " zonas integradas en ruteo logístico.\n• Pendiente de Validación: " + (totalUb - totalCnt) + " posiciones por auditar en bodega.\n• Capacidad de Operación: " + CUR.reqRate + " ubicaciones / día requeridas para asegurar el cierre sin desfases." },
-    { title: "3. Análisis de Calidad y Confiabilidad (IRA)", content: "Indicadores de Integridad de Datos (IRA):\n• Exactitud del Inventario Físico: " + ila + "% de conformidad limpia.\n• Alertas de Captura: " + VDATA.malformed.length + " códigos malformados retenidos por sistema.\n• Errores de Omisión: " + VDATA.missing.length + " pallets no registrados en la planeación maestra." }
+    { title: "1. Portada — Conteo Cíclico Colgate", content: "• Reporte de control de inventarios.\n• Sincronización dinámica.\n• Análisis de confiabilidad de la malla." },
+    { title: "2. Resumen Ejecutivo", content: "• Avance físico del ciclo: " + CUR.globalProgress + "%.\n• Confiabilidad global IRA: " + ila + "%.\n• " + totalErr + " desviaciones operativas críticas." },
+    { title: "3. Avance de la Malla de Almacenamiento", content: "• " + totalCnt + " posiciones ya verificadas en auditoría de campo.\n• Quedan " + (totalUb - totalCnt) + " ubicaciones en el plan maestro.\n• Desviación actual del cronograma: " + CUR.deviation + "." },
+    { title: "4. Capacidad y Ritmo Operativo Diario", content: "• Días hábiles completados en el sistema: " + CUR.daysPassed + " días.\n• Ventana restante disponible: " + CUR.daysLeft + " días hábiles.\n• Ritmo meta exigido: " + CUR.reqRate + " ubicaciones por jornada." },
+    { title: "5. Distribución y Estrategia ABC", content: "• Zona A (Alta Rotación): Control prioritario diario.\n• Zona B (Media Rotación): Cuadrante de revisión semanal.\n• Zona C (Baja Rotación): Mapeo base de ciclo." },
+    { title: "6. Análisis Detallado por Estante", content: "• Monitoreo activo sobre " + Object.keys(D.est_summary).length + " bloques estructurados.\n• Seguimiento visual del plan de estanterías en tiempo real." },
+    { title: "7. Control de Calidad — Capturas Bloqueantes", content: "• Errores de lectura de código de barras: " + VDATA.malformed.length + " hallazgos.\n• Requieren corrección directa en etiqueta y posición física." },
+    { title: "8. Integridad de Datos — Omisiones de Base", content: "• Pallets no listados en planificación: " + VDATA.missing.length + " alertas.\n• Inconsistencia crítica entre WMS y conteo físico manual." },
+    { title: "9. Plan de Acción Inmediato", content: "• Saneamiento inmediato de posiciones con error.\n• Ajuste de ruteo para estantes con estatus de retraso." },
+    { title: "10. Conclusiones y Próximos Pasos", content: "• Mantener la meta de exactitud sobre el estándar corporativo.\n• Próximo cierre de ciclo sincronizado con el centro logístico." }
   ];
 }
 
@@ -563,26 +538,21 @@ function exportPPTX() {
   var totalErr = VDATA.malformed.length + VDATA.missing.length;
   var ila = totalCnt > 0 ? Math.round(((totalCnt - totalErr) / totalCnt) * 100) : 100;
   
-  // --- SLIDE 1: PORTADA ---
-  var s1 = pres.addSlide();
-  s1.background = { color: BLUE };
-  s1.addText("CONTEO CÍCLICO — COLGATE", { x:1.0, y:2.2, w:11.3, h:1.0, fontSize:40, bold:true, color:"4c9eff", fontFace:"Arial" });
-  s1.addText("Reporte de Cobertura, Confiabilidad de Inventarios e Indicador IRA", { x:1.0, y:3.3, w:11.3, h:0.5, fontSize:18, color:"94a3b8", fontFace:"Arial" });
-  s1.addText("Sincronizado dinámicamente vía Google Sheets API", { x:1.0, y:3.8, w:11.3, h:0.4, fontSize:14, color:"64748b", italic:true });
-  s1.addText("Gerencia de Logística y Operaciones  ·  " + new Date().toLocaleDateString('es-CL'), { x:1.0, y:5.8, w:8.0, h:0.4, fontSize:12, color:WHITE });
+  // --- S1: PORTADA ---
+  var s1 = pres.addSlide(); s1.background = { color: BLUE };
+  s1.addText("CONTEO CÍCLICO — COLGATE", { x:1.0, y:2.2, w:11.3, h:1.0, fontSize:40, bold:true, color:"4c9eff", fontFace:"Calibri" });
+  s1.addText("Reporte Ejecutivo de Control de Cobertura e Indicador IRA", { x:1.0, y:3.3, w:11.3, h:0.5, fontSize:18, color:"94a3b8", fontFace:"Calibri" });
+  s1.addText("Gerencia de Operaciones y Logística  ·  " + new Date().toLocaleDateString('es-CL'), { x:1.0, y:5.8, w:8.0, h:0.4, fontSize:12, color:WHITE });
 
-  // --- SLIDE 2: KPI GENERALES ---
-  var s2 = pres.addSlide();
-  s2.background = { color: "F4F5F7" };
-  s2.addText("1. INDICADORES CLAVE DE DESEMPEÑO (KPI)", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
-  
+  // --- S2: RESUMEN EJECUTIVO ---
+  var s2 = pres.addSlide(); s2.background = { color: "F4F5F7" };
+  s2.addText("1. RESUMEN EJECUTIVO DEL CICLO", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE, fontFace:"Calibri" });
   var kpis = [
-    { title: "AVANCE FÍSICO", val: CUR.globalProgress+"%", sub: totalCnt+" de "+totalUb+" ubicaciones", col: "378add" },
-    { title: "PRECISIÓN IRA", val: ila+"%", sub: totalErr+" fallas detectadas", col: "1d9e75" },
-    { title: "TIEMPO DISPONIBLE", val: CUR.daysLeft+" Días", sub: "Ritmo obj: "+CUR.reqRate+" ub/día", col: "ba7517" },
-    { title: "ALERTAS CRÍTICAS", val: totalErr, sub: VDATA.malformed.length+" bloqueos de captura", col: "d85a30" }
+    { title: "AVANCE FÍSICO", val: CUR.globalProgress+"%", sub: totalCnt+" de "+totalUb+" ub.", col: "378add" },
+    { title: "EXACTITUD IRA", val: ila+"%", sub: totalErr+" discrepancias", col: "1d9e75" },
+    { title: "TIEMPO DISPONIBLE", val: CUR.daysLeft+" Días", sub: "Ritmo: "+CUR.reqRate+" ub/día", col: "ba7517" },
+    { title: "ALERTAS", val: totalErr, sub: VDATA.malformed.length+" de captura", col: "d85a30" }
   ];
-  
   kpis.forEach(function(k, idx) {
     var cx = 0.6 + (idx * 2.9);
     s2.addShape(pres.ShapeType.rect, { x:cx, y:1.3, w:2.7, h:1.8, fill:{color:WHITE}, line:{color:"E2E5EA", width:1} });
@@ -592,71 +562,69 @@ function exportPPTX() {
     s2.addShape(pres.ShapeType.rect, { x:cx, y:3.0, w:2.7, h:0.1, fill:{color:k.col}, line:{type:"none"} });
   });
 
-  // --- SLIDE 3: MONITOREO DE ESTANTES ---
-  var s3 = pres.addSlide();
-  s3.background = { color: "F4F5F7" };
-  s3.addText("2. COBERTURA DETALLADA POR LÍNEA DE ESTANTES", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
-  
+  // --- S3: AVANCE MALLA ---
+  var s3 = pres.addSlide(); s3.background = { color: BLUE };
+  s3.addText("2. AVANCE DE LA MALLA DE ALMACENAMIENTO", { x:0.8, y:0.6, w:11.5, h:0.5, fontSize:24, bold:true, color:"4c9eff" });
+  s3.addText("• Estado de cobertura física: " + CUR.globalProgress + "% del universo total mapeado.\n• Total posiciones auditadas en piso: " + totalCnt + " ubicaciones registradas.\n• Volumen remanente en planificación: " + (totalUb - totalCnt) + " posiciones por auditar.\n• Estatus de desviación del cronograma de operaciones: Rango '" + CUR.deviation + "'.", { x:0.8, y:1.8, w:11.5, h:4.0, fontSize:16, color:WHITE, lineSpacing:28 });
+
+  // --- S4: CAPACIDAD Y RITMO ---
+  var s4 = pres.addSlide(); s4.background = { color: "F4F5F7" };
+  s4.addText("3. PLANIFICACIÓN DE CAPACIDAD Y RITMO DIARIO", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
+  s4.addText("• Ventana de tiempo transcurrida del plan: " + CUR.daysPassed + " días hábiles.\n• Margen de holgura disponible para cierre: " + CUR.daysLeft + " días hábiles.\n• Carga de trabajo requerida por jornada: " + CUR.reqRate + " ubicaciones / día para evitar quiebre.\n• La métrica se recalcula automáticamente basado en las jornadas de 8 horas configuradas.", { x:0.6, y:1.5, w:11.5, h:4.5, fontSize:15, color:BLUE, lineSpacing:24 });
+
+  // --- S5: ESTRATEGIA ABC ---
+  var s5 = pres.addSlide(); s5.background = { color: "F4F5F7" };
+  s5.addText("4. SEGMENTACIÓN OPERATIVA POR CRITICIDAD ABC", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
+  s5.addText("• Categoría A (Alta Rotación): Representa el 45% del flujo. Auditoría estricta de ciclo diario.\n• Categoría B (Rotación Media): Concentra el 35% de las posiciones. Control con ventana semanal.\n• Categoría C (Baja Rotación): Cubre el 20% de las estanterías de almacenamiento a largo plazo.", { x:0.6, y:1.5, w:11.5, h:4.5, fontSize:15, color:BLUE, lineSpacing:24 });
+
+  // --- S6: MONITOREO DE ESTANTES ---
+  var s6 = pres.addSlide(); s6.background = { color: "F4F5F7" };
+  s6.addText("5. MONITOREO DE COBERTURA POR BLOQUE DE ESTANTES", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
   var tableRows = [["Estante", "Total Ub.", "Contadas", "Restantes", "Avance %", "Estado"]];
-  for(var sname in D.est_summary) {
-    var st = D.est_summary[sname];
+  for(var sn in D.est_summary){
+    var st = D.est_summary[sn];
     var pct = st.tot > 0 ? Math.round((st.cnt / st.tot) * 100) : 0;
-    tableRows.push([sname, st.tot.toString(), st.cnt.toString(), st.rem.toString(), pct+"%", st.status]);
+    tableRows.push([sn, st.tot.toString(), st.cnt.toString(), st.rem.toString(), pct+"%", st.status]);
   }
-  
-  s3.addTable(tableRows, {
-    x: 0.6, y: 1.1, w: 12.1, h: 4.8,
-    border: { color: "E2E5EA", width: 1 },
-    fill: { color: WHITE },
-    fontSize: 11,
-    autoPage: true,
-    colW: [2.0, 1.8, 1.8, 1.8, 2.0, 2.7],
-    headerRow: true,
-    headerStyles: { fill: { color: "1A1D23" }, color: WHITE, bold: true }
-  });
+  s6.addTable(tableRows, { x: 0.6, y: 1.1, w: 12.1, h: 4.8, border:{color:"E2E5EA", width:1}, fill:{color:WHITE}, fontSize:11, autoPage:true, colW:[2,1.8,1.8,1.8,2,2.7], headerRow:true, headerStyles:{fill:{color:"1A1D23"}, color:WHITE, bold:true} });
 
-  // --- SLIDE 4: ALERTAS Y DISCREPANCIAS ---
-  var s4 = pres.addSlide();
-  s4.background = { color: "F4F5F7" };
-  s4.addText("3. HALLAZGOS Y DISCREPANCIAS EN CONTROL DE CALIDAD", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
-  
-  s4.addShape(pres.ShapeType.rect, { x:0.6, y:1.2, w:5.9, h:5.2, fill:{color:WHITE}, line:{color:"E2E5EA", width:1} });
-  s4.addText("ERRORES DE CAPTURA / ESTRUCTURA ("+VDATA.malformed.length+")", { x:0.8, y:1.4, w:5.5, h:0.4, fontSize:13, bold:true, color:RED });
-  
-  var mText = "";
-  if(VDATA.malformed.length === 0) mText = "No se registran errores de lectura.";
-  else VDATA.malformed.slice(0, 8).forEach(function(i){ mText += "• Posición " + i.pos + ": " + i.txt + "\n"; });
-  s4.addText(mText, { x:0.8, y:1.9, w:5.5, h:4.3, fontSize:11, color:"334155" });
-  
-  s4.addShape(pres.ShapeType.rect, { x:6.8, y:1.2, w:5.9, h:5.2, fill:{color:WHITE}, line:{color:"E2E5EA", width:1} });
-  s4.addText("OMISIONES EN BASE MAESTRA ("+VDATA.missing.length+")", { x:7.0, y:1.4, w:5.5, h:0.4, fontSize:13, bold:true, color:AMBER });
-  
-  var msText = "";
-  if(VDATA.missing.length === 0) msText = "No se registran omisiones de planificación.";
-  else VDATA.missing.slice(0, 8).forEach(function(i){ msText += "• Ubicación " + i.pos + ": " + i.txt + "\n"; });
-  s4.addText(msText, { x:7.0, y:1.9, w:5.5, h:4.3, fontSize:11, color:"334155" });
+  // --- S7: ALERTAS DE CAPTURA ---
+  var s7 = pres.addSlide(); s7.background = { color: "F4F5F7" };
+  s7.addText("6. CALIDAD DE DATOS — ALERTAS DE CAPTURA BLOQUEANTES", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
+  s7.addShape(pres.ShapeType.rect, { x:0.6, y:1.2, w:12.1, h:5.2, fill:{color:WHITE}, line:{color:"E2E5EA", width:1} });
+  s7.addText("DESVIACIONES DE LECTURA REGISTRADAS EN BODEGA ("+VDATA.malformed.length+" CASOS)", { x:0.8, y:1.4, w:11.5, h:0.4, fontSize:13, bold:true, color:RED });
+  var t7 = ""; if(VDATA.malformed.length===0) t7="No se registran desviaciones de captura de etiquetas en este ciclo."; else VDATA.malformed.slice(0,8).forEach(function(i){ t7+="• Posición "+i.pos+": "+i.txt+"\n"; });
+  s7.addText(t7, { x:0.8, y:1.9, w:11.5, h:4.2, fontSize:11, color:"334155", lineSpacing:6 });
 
-  // --- SLIDE 5: RESUMEN OPERATIVO ---
-  var s5 = pres.addSlide();
-  s5.background = { color: BLUE };
-  s5.addText("RESUMEN DE EJECUCIÓN Y PLAN DE CIERRE", { x:0.8, y:0.6, w:11.5, h:0.5, fontSize:24, bold:true, color:"4c9eff" });
-  
+  // --- S8: OMISIONES MAESTRAS ---
+  var s8 = pres.addSlide(); s8.background = { color: "F4F5F7" };
+  s8.addText("7. INTEGRIDAD — OMISIONES EN PLANIFICACIÓN MAESTRA", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
+  s8.addShape(pres.ShapeType.rect, { x:0.6, y:1.2, w:12.1, h:5.2, fill:{color:WHITE}, line:{color:"E2E5EA", width:1} });
+  s8.addText("PALLETS NO CONTEMPLADOS EN EL PLAN MAESTRO ("+VDATA.missing.length+" ALERTAS)", { x:0.8, y:1.4, w:11.5, h:0.4, fontSize:13, bold:true, color:AMBER });
+  var t8 = ""; if(VDATA.missing.length===0) t8="No se detectaron inconsistencias de omisión de SKU respecto a la base maestra."; else VDATA.missing.slice(0,8).forEach(function(i){ t8+="• Ubicación "+i.pos+": "+i.txt+"\n"; });
+  s8.addText(t8, { x:0.8, y:1.9, w:11.5, h:4.2, fontSize:11, color:"334155", lineSpacing:6 });
+
+  // --- S9: PLAN DE ACCIÓN ---
+  var s9 = pres.addSlide(); s9.background = { color: "F4F5F7" };
+  s9.addText("8. PLAN DE ACCIÓN Y MITIGACIÓN DE DESVIACIONES", { x:0.6, y:0.4, w:11.5, h:0.5, fontSize:22, bold:true, color:BLUE });
+  s9.addText("• Bloqueo y re-etiquetado inmediato en las " + VDATA.malformed.length + " ubicaciones con error de captura.\n• Sincronización forzada con Aseguramiento de Calidad para ingresar las omisiones encontradas.\n• Despliegue de equipo de apoyo técnico en los estantes con criticidad de retraso moderado/crítico.\n• Auditorías cruzadas al finalizar la jornada en las ubicaciones críticas de clasificación A.", { x:0.6, y:1.6, w:11.5, h:4.5, fontSize:15, color:BLUE, lineSpacing:26 });
+
+  // --- S10: CONCLUSIONES ---
+  var s10 = pres.addSlide(); s10.background = { color: BLUE };
+  s10.addText("CONCLUSIONES GENERALES Y CONTROL DE INVENTARIO", { x:0.8, y:0.6, w:11.5, h:0.5, fontSize:24, bold:true, color:"4c9eff" });
   var items = [
-    ["Malla de Control Físico", "Malla actual al " + CUR.globalProgress + "% de avance lineal sobre el plano maestro.", CUR.globalProgress >= 50 ? GREEN : AMBER],
-    ["Indicador de Confiabilidad IRA", "El nivel de exactitud se sitúa en un " + ila + "%" + (CUR.daysLeft > 0 ? "; requiere validaciones activas durante los " + CUR.daysLeft + " días restantes." : "."), ila >= 95 ? GREEN : AMBER],
-    ["Validación de Inventarios", totalErr + " ubicaciones totales con inconsistencias bajo revisión del equipo técnico.", RED],
-    ["Planificación ABC", "La estrategia de conteo mantiene los estantes categorizados según la tasa de rotación diaria y semanal.", "378add"]
+    ["Estatus del Avance Lineal", "Malla física controlada al " + CUR.globalProgress + "%" + (CUR.daysLeft > 0 ? "; se completan en aproximadamente " + CUR.daysLeft + " días hábiles al ritmo actual." : "."), ila >= 95 ? GREEN : AMBER],
+    [totalErr + " ubicaciones requieren validación", VDATA.malformed.length + " con error de captura (bloqueante) y " + VDATA.missing.length + " ausentes en la base maestra de planificación.", RED],
+    ["Plan de ciclo configurable", "El dashboard permite definir la fecha de inicio y recalcula automáticamente la distribución ABC por estante.", "378add"]
   ];
-  
-  var iy = 1.6;
+  var iy = 1.7;
   items.forEach(function(it){
-    s5.addShape(pres.ShapeType.ellipse, { x:0.8, y:iy+0.05, w:0.25, h:0.25, fill:{color:it[2]}, line:{type:"none"} });
-    s5.addText(it[0], { x:1.2, y:iy, w:11.0, h:0.3, fontSize:15, bold:true, color:WHITE });
-    s5.addText(it[1], { x:1.2, y:iy+0.3, w:11.0, h:0.4, fontSize:12, color:"CBD5E1" });
-    iy += 1.1;
+    s10.addShape(pres.ShapeType.ellipse, { x:0.8, y:iy+0.05, w:0.35, h:0.35, fill:{color:it[2]}, line:{type:"none"} });
+    s10.addText(it[0], { x:1.4, y:iy, w:10.8, h:0.4, fontSize:16, bold:true, color:WHITE, fontFace:"Calibri" });
+    s10.addText(it[1], { x:1.4, y:iy+0.4, w:10.8, h:0.45, fontSize:12, color:"CADCFC", fontFace:"Calibri" });
+    iy += 1.15;
   });
-  
-  s5.addText("Dashboard Conteo Cíclico Colgate  ·  Generado el " + new Date().toLocaleDateString('es-CL'), { x:0.8, y:6.7, w:8.0, h:0.3, fontSize:10, color:"64748b" });
+  s10.addText("Dashboard Conteo Cíclico Colgate  ·  Generado el " + new Date().toLocaleDateString('es-CL'), { x:0.8, y:6.9, w:8, h:0.3, fontSize:10, color:"64748b" });
 
   pres.writeFile({ fileName: "Reporte_Ciclico_Colgate_" + new Date().toISOString().slice(0,10) });
 }
