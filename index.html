@@ -1,32 +1,41 @@
 <script>
-// 1. URL de tu API creada
-const API_URL = "https://script.google.com/macros/s/AKfycbxNg-Kbw7LCPwiA6h3YvftMnZ4lYsglT217i8kFXI2SLulQDtma2JfTLnBHHEYWSNqz/exec";
+  // Tu URL de la API
+  const API_URL = "https://script.google.com/macros/s/AKfycbxNg-Kbw7LCPwiA6h3YvftMnZ4lYsglT217i8kFXI2SLulQDtma2JfTLnBHHEYWSNqz/exec";
 
-// 2. Función para cargar y calcular
-async function cargarDatosDesdeSheet() {
+  async function actualizarDashboard() {
     try {
-        const response = await fetch(API_URL);
-        const data = await response.json(); // Data es un arreglo de objetos
+      // Usamos una técnica llamada 'no-cors' o simplemente fetch directo si el script tiene el header correcto
+      const response = await fetch(API_URL);
+      const data = await response.json();
 
-        // LÓGICA DE CÁLCULO
-        // Aquí ajustamos según los nombres de columna reales de tu archivo
-        const totalUbicaciones = data.length;
-        const pendientes = data.filter(item => item["Diferencia"] != 0).length;
-        
-        // 3. ACTUALIZAR TU DISEÑO (Asumiendo IDs existentes en tu HTML)
-        // Sustituye "id-de-tu-elemento" por los IDs reales que ya tienes en tu index.html
-        if(document.getElementById("valor-total")) 
-            document.getElementById("valor-total").innerText = totalUbicaciones;
-            
-        if(document.getElementById("valor-pendientes")) 
-            document.getElementById("valor-pendientes").innerText = pendientes;
+      // CÁLCULOS
+      const totalRegistros = data.length;
+      const pendientes = data.filter(item => parseFloat(item["DIFERENCIA"]) !== 0);
 
-        console.log("Datos cargados:", data);
-    } catch (e) {
-        console.error("Error al conectar con Google Sheets:", e);
+      // ACTUALIZACIÓN DEL DOM (Asegúrate de que estos ID existan en tu HTML)
+      // Si tus elementos tienen otros IDs, cámbialos aquí:
+      if(document.getElementById("valor-total")) 
+         document.getElementById("valor-total").innerText = totalRegistros;
+         
+      if(document.getElementById("valor-pendientes")) 
+         document.getElementById("valor-pendientes").innerText = pendientes.length;
+
+      // Llenar tabla (Asegúrate de tener un <tbody id="cuerpo-tabla">)
+      const tabla = document.getElementById("cuerpo-tabla");
+      if(tabla) {
+        tabla.innerHTML = "";
+        pendientes.forEach(item => {
+          tabla.innerHTML += `<tr>
+            <td>${item["ITDESC"]}</td>
+            <td>${item["UBIEST"]}</td>
+            <td>${item["DIFERENCIA"]}</td>
+          </tr>`;
+        });
+      }
+    } catch (error) {
+      console.error("Error al cargar datos:", error);
     }
-}
+  }
 
-// Ejecutar al iniciar
-window.onload = cargarDatosDesdeSheet;
+  window.onload = actualizarDashboard;
 </script>
