@@ -151,7 +151,7 @@ footer{padding:14px 24px;color:var(--muted);font-size:11px;border-top:1px solid 
     </div>
     <div class="controls">
       <span id="statusPill" class="status-pill">Sin datos cargados</span>
-      <button class="btn btn-primary" id="btnDrive" style="display:none;">⟳ Actualizar desde Drive</button>
+      <button class="btn btn-primary" id="btnDrive">⟳ Actualizar desde Sheets</button>
       <button class="btn" id="btnToggleUpload">⬆ Cargar archivos</button>
       <button class="btn" id="btnExportExcel" disabled>⬇ Exportar Excel</button>
       <button class="btn" id="btnExportPptx" disabled>⬇ Exportar PPT</button>
@@ -227,8 +227,8 @@ footer{padding:14px 24px;color:var(--muted);font-size:11px;border-top:1px solid 
 
 <div id="emptyState" class="empty">
   <h2>Todavía no hay datos cargados</h2>
-  <p>Sube el Excel de conteo cíclico para tener filtrado completo y detalle línea por línea.</p>
-  <button class="btn btn-primary" id="btnDrive2" style="display:none;">⟳ Actualizar desde Drive</button>
+  <p>Carga los datos directamente desde Google Sheets con un clic, o sube el Excel manualmente.</p>
+  <button class="btn btn-primary" id="btnDrive2">⟳ Cargar desde Sheets</button>
   <button class="btn" id="btnToggleUpload2">⬆ Cargar archivos</button>
 </div>
 
@@ -236,7 +236,6 @@ footer{padding:14px 24px;color:var(--muted);font-size:11px;border-top:1px solid 
 
 <script>
 /* ============================== CONFIG ============================== */
-const DRIVE_FILE_ID = "1gSTZbSkkVck0bo6sRTOkHG7DDhSs_ZHK3PCH4Xhakvc";
 
 const TABS = [
   {key:"ira", code:"IRA/ERI", title:"Exactitud de Registro", desc:"% de líneas contadas donde el stock de sistema coincide con el físico real. Mismo cálculo reportado bajo dos nombres: IRA (Inventory Record Accuracy, meta 95%) y ERI (Exact Record Inventory, meta 98%)."},
@@ -407,57 +406,40 @@ document.getElementById("fileConteo").addEventListener("change", singleFileHandl
 document.getElementById("fileUbicacion").addEventListener("change", singleFileHandler("ubicacion"));
 document.getElementById("fileAbc").addEventListener("change", singleFileHandler("abc"));
 
-/* ============================== DRIVE FETCH (AI summary) ============================== */
+/* URLs de las 3 hojas publicadas como CSV desde Google Sheets (Archivo → Publicar en la Web) */
+const SHEETS_CSV = {
+  conteo:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQJ2lsMvj3OZvI_E49BjcxsPdZT6NPMksrrJ3JDSgQFCuN9n9FsexXo6pJJDC7TsgChJg2eaLPyNCpj/pub?gid=877514102&single=true&output=csv",
+  ubicacion: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQJ2lsMvj3OZvI_E49BjcxsPdZT6NPMksrrJ3JDSgQFCuN9n9FsexXo6pJJDC7TsgChJg2eaLPyNCpj/pub?gid=2021670390&single=true&output=csv",
+  abc:       "https://docs.google.com/spreadsheets/d/e/2PACX-1vQJ2lsMvj3OZvI_E49BjcxsPdZT6NPMksrrJ3JDSgQFCuN9n9FsexXo6pJJDC7TsgChJg2eaLPyNCpj/pub?gid=86787649&single=true&output=csv"
+};
+
+/* ============================== DRIVE FETCH (CSV directo desde Google Sheets publicadas) ============================== */
 async function fetchFromDrive(){
-  setStatus("Conectando a Google Drive...", null);
+  setStatus("Cargando desde Google Sheets...", null);
   document.getElementById("btnDrive").disabled = true;
   try{
-    const prompt = `Lee el archivo de Google Drive con fileId "${DRIVE_FILE_ID}" usando la herramienta de Google Drive para leer su contenido. El archivo es una hoja de cálculo con 3 tablas: (1) Conteo cíclico, con columnas Fecha conteo, emplaza, almacen, estante, columna, nivel, ubcia, ubprod (SKU), itdesc (descripción), Stock sistema, Conteo 1, Conteo 2, fisico real, Diferencia, Observacion, estantecolumnanivel (código de ubicación). (2) Matriz de ubicación: el universo completo de ubicaciones físicas que existen en la bodega, con columnas emplaza, almacen, estante, columna, nivel, ubesta, estantecolumnanivel. Ignora su columna "Conteo pendiente": es una foto fija de un solo mes y no sirve para consolidar. (3) Estudio/Planificación ABC, con columnas SKU, Count of StockTotal, Sum of StockTotal, Vta12Mo, ABC (clase A/B/C/D), Month (M1/M2/M3, el mes del plan trimestral).
+    const fetchSheet = async (url, label) => {
+      setStatus("Descargando " + label + "...", null);
+      const res = await fetch(url, {cache:"no-store"});
+      if(!res.ok) throw new Error("HTTP " + res.status + " cargando " + label);
+      const text = await res.text();
+      const wb = XLSX.read(text, {type:"string", cellDates:true});
+      return wb.Sheets[wb.SheetNames[0]];
+    };
 
-El plan es contar TODAS las ubicaciones una vez por mes durante 3 meses (M1, M2, M3). Para saber qué tan avanzado está ese plan, agrupa las fechas reales de "Fecha conteo" por mes calendario (no uses la columna "Conteo pendiente"). Para cruzar ambas hojas usa el código de ubicación real: la columna T del Conteo cíclico y la columna H de la Matriz de ubicación (si el texto del encabezado no calza exactamente con "estantecolumnanivel", usa la posición de columna, no el nombre). La hoja de matriz de ubicación ya viene consolidada (1 fila = 1 ubicación única). La hoja de Conteo cíclico puede tener varias filas para la misma ubicación (distintos SKU o lotes en el mismo lugar) — agrúpalas por ese código de ubicación antes de contar, así esas filas múltiples cuentan como "esa ubicación, contada" una sola vez, no como varias ubicaciones. Para cada ubicación de la matriz, cuenta en cuántos meses calendario distintos aparece (ya consolidada) dentro del Conteo cíclico: 0 meses = nunca contada, 1-2 = en progreso, 3 = completa. Lo mismo a nivel de SKU para coberturaSku.
+    RAW = {conteo:[], ubicacion:[], abc:[], ubicacionDuplicadas:0};
+    const wsConteo = await fetchSheet(SHEETS_CSV.conteo, "Conteo cíclico");
+    ingestSheet(sheetToRows(wsConteo), "conteo", wsConteo);
+    const wsUbic = await fetchSheet(SHEETS_CSV.ubicacion, "Matriz de ubicación");
+    ingestSheet(sheetToRows(wsUbic), "ubicacion", wsUbic);
+    const wsAbc = await fetchSheet(SHEETS_CSV.abc, "Estudio ABC");
+    ingestSheet(sheetToRows(wsAbc), "abc", wsAbc);
 
-Calcula estas métricas y devuelve EXCLUSIVAMENTE un JSON válido, sin texto adicional, sin markdown ni backticks, con esta forma exacta (usa números, no strings, para los campos numéricos; trunca las listas a máximo 12 filas cada una, ordenadas de mayor a menor relevancia):
-
-{
- "ira":{"n":0,"match":0,"pct":0},
- "ila":{"total":0,"completas":0,"enProgreso":0,"nuncaContadas":0,"alMenosUna":0,"counted":0,"pending":0,"pct":0,"pctPleno":0},
- "ia":{"stock":0,"absDiff":0,"pct":0},
- "topDiff":[{"sku":"","desc":"","loc":"","sis":0,"fis":0,"dif":0,"obs":""}],
- "cobertura":[{"zona":"","total":0,"contadas":0,"pct":0}],
- "coberturaSku":[{"sku":"","desc":"","meses":0,"pct":0}],
- "abcAcc":[{"clase":"A","n":0,"match":0,"pct":0},{"clase":"B","n":0,"match":0,"pct":0},{"clase":"C","n":0,"match":0,"pct":0},{"clase":"D","n":0,"match":0,"pct":0}],
- "pendientes":[{"zona":"","loc":"","meses":0,"pct":0,"estado":""}],
- "pendientesTotal":0,
- "enProgresoTotal":0,
- "sobrantesFaltantes":{"sobrantes":{"n":0,"u":0},"faltantes":{"n":0,"u":0},"iguales":0},
- "productividad":[{"fecha":"","n":0}],
- "riesgo":[{"sku":"","desc":"","clase":"","dif":0,"valor":0}],
- "dobleConteo":[{"sku":"","loc":"","c1":0,"c2":0,"dif":0}]
-}
-
-Definiciones: ira = sobre las líneas con fisico real registrado, n=cantidad de líneas, match=líneas donde Diferencia=0, pct=match/n*100. ila = sobre TODAS las ubicaciones de la matriz, completas=ubicaciones con sus 3 meses cubiertos, enProgreso=1 o 2 meses cubiertos, nuncaContadas=0 meses, alMenosUna=total-nuncaContadas (counted=completas, pending=nuncaContadas, por compatibilidad), pct=alMenosUna/total*100 (% contadas al menos una vez, esta es la métrica principal), pctPleno=promedio del % de avance (meses/3) de todas las ubicaciones (más estricta, naturalmente baja a mitad de trimestre). ia = stock=suma de Stock sistema (líneas contadas), absDiff=suma de |Diferencia|, pct=(1-absDiff/stock)*100. topDiff = top 12 líneas por |Diferencia| descendente. cobertura = agrupado por estante/zona, contadas=ubicaciones con sus 3 meses completos, pct=avance promedio de la zona. coberturaSku = top 12 SKUs con MENOR % de avance (meses contados/3). abcAcc = cruzando SKU del conteo con su clase ABC, exactitud por clase. pendientes = top 12 ubicaciones con menor % de avance, con estado="Nunca contada" si meses=0 o "En progreso" si 1-2. pendientesTotal=cantidad de ubicaciones con 0 meses (nunca contadas). enProgresoTotal=cantidad con 1-2 meses. sobrantesFaltantes: sobrantes=Diferencia>0 (n=cantidad, u=suma), faltantes=Diferencia<0 (n=cantidad, u=suma), iguales=Diferencia=0 (cantidad). productividad = líneas contadas agrupadas por Fecha conteo. riesgo = SKUs clase A o B con Diferencia≠0, top 12 por |Diferencia|*valor descendente, valor=Sum of StockTotal del ABC. dobleConteo = líneas donde Conteo 1 y Conteo 2 están ambos presentes y son distintos, top 12 por |diferencia entre conteos|.`;
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        messages: [{role:"user", content: prompt}],
-        mcp_servers: [{type:"url", url:"https://drivemcp.googleapis.com/mcp/v1", name:"google-drive"}]
-      })
-    });
-    const data = await response.json();
-    const textBlocks = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
-    const clean = textBlocks.replace(/```json|```/g,"").trim();
-    const jsonStart = clean.indexOf("{");
-    const jsonEnd = clean.lastIndexOf("}");
-    const parsed = JSON.parse(clean.slice(jsonStart, jsonEnd+1));
-    DRIVE_SUMMARY = parsed;
-    finishLoad("drive");
+    finishLoad("manual");
+    setStatus("Google Sheets · actualizado " + new Date().toLocaleTimeString("es-MX"), "ok");
   }catch(err){
     console.error(err);
-    setStatus("No se pudo conectar a Drive — usa carga manual", "err");
+    setStatus("No se pudo cargar desde Google Sheets — " + err.message, "err");
   }finally{
     document.getElementById("btnDrive").disabled = false;
   }
