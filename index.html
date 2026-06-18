@@ -151,10 +151,11 @@ footer{padding:14px 24px;color:var(--muted);font-size:11px;border-top:1px solid 
     </div>
     <div class="controls">
       <span id="statusPill" class="status-pill">Sin datos cargados</span>
-      <button class="btn btn-primary" id="btnDrive">⟳ Actualizar desde Drive</button>
+      <button class="btn btn-primary" id="btnDrive" style="display:none;">⟳ Actualizar desde Drive</button>
       <button class="btn" id="btnToggleUpload">⬆ Cargar archivos</button>
       <button class="btn" id="btnExportExcel" disabled>⬇ Exportar Excel</button>
       <button class="btn" id="btnExportPptx" disabled>⬇ Exportar PPT</button>
+      <button class="btn" id="btnExportSnapshot" disabled>💾 Generar snapshot</button>
     </div>
   </div>
 
@@ -182,6 +183,7 @@ footer{padding:14px 24px;color:var(--muted);font-size:11px;border-top:1px solid 
         <input type="file" id="fileAbc" accept=".xlsx,.xls,.csv">
       </div>
     </div>
+    <p class="upload-note" style="margin-top:12px;">¿Vas a compartir esta página con otras personas (por ejemplo en GitHub Pages)? Cada visitante vería la pantalla vacía hasta que suba su propio archivo. Para evitarlo: carga aquí el Excel más reciente, espera a que el panel calcule todo, y luego toca <strong>"💾 Generar snapshot"</strong> arriba — descarga un <code>data.json</code> que debes subir a tu repositorio junto al HTML (mismo nivel, mismo nombre). La próxima vez que alguien abra la URL, la página carga ese <code>data.json</code> sola y ve los mismos datos que tú, sin tocar nada.</p>
   </div>
 </div>
 
@@ -225,8 +227,8 @@ footer{padding:14px 24px;color:var(--muted);font-size:11px;border-top:1px solid 
 
 <div id="emptyState" class="empty">
   <h2>Todavía no hay datos cargados</h2>
-  <p>Trae los 3 datasets desde Google Drive con un clic, o súbelos manualmente para tener filtrado completo y detalle línea por línea.</p>
-  <button class="btn btn-primary" id="btnDrive2">⟳ Actualizar desde Drive</button>
+  <p>Sube el Excel de conteo cíclico para tener filtrado completo y detalle línea por línea.</p>
+  <button class="btn btn-primary" id="btnDrive2" style="display:none;">⟳ Actualizar desde Drive</button>
   <button class="btn" id="btnToggleUpload2">⬆ Cargar archivos</button>
 </div>
 
@@ -471,6 +473,7 @@ function finishLoad(mode){
   document.getElementById("uploadPanel").classList.remove("open");
   document.getElementById("btnExportExcel").disabled = false;
   document.getElementById("btnExportPptx").disabled = false;
+  document.getElementById("btnExportSnapshot").disabled = (mode!=="manual");
   document.getElementById("kpiStrip").style.display = "grid";
   document.getElementById("filterBar").style.display = "flex";
   document.getElementById("filterBar").classList.toggle("disabled", mode==="drive");
@@ -1158,6 +1161,41 @@ async function exportToPptx(){
   }
 }
 document.getElementById("btnExportPptx").addEventListener("click", exportToPptx);
+
+/* ============================== SNAPSHOT: para compartir sin que cada visitante suba el archivo ============================== */
+function exportSnapshot(){
+  if(MODE!=="manual") return;
+  const snap = {
+    conteo: RAW.conteo, ubicacion: RAW.ubicacion, abc: RAW.abc,
+    ubicacionDuplicadas: RAW.ubicacionDuplicadas, generatedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(snap)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "data.json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+}
+document.getElementById("btnExportSnapshot").addEventListener("click", exportSnapshot);
+
+/* ============================== INIT: intenta cargar data.json automáticamente (modo "publicado") ============================== */
+(async function tryAutoLoadSnapshot(){
+  try{
+    const res = await fetch("./data.json", {cache:"no-store"});
+    if(!res.ok) return;
+    const snap = await res.json();
+    if(!snap || !Array.isArray(snap.conteo)) return;
+    RAW.conteo = snap.conteo || [];
+    RAW.ubicacion = snap.ubicacion || [];
+    RAW.abc = snap.abc || [];
+    RAW.ubicacionDuplicadas = snap.ubicacionDuplicadas || 0;
+    const when = snap.generatedAt ? new Date(snap.generatedAt).toLocaleString("es-MX") : "";
+    finishLoad("manual");
+    setStatus("Datos publicados" + (when?" · actualizado "+when:""), "ok");
+  }catch(e){
+    // no hay data.json (normal si nadie ha publicado un snapshot todavía, o si se abre como archivo local file://) — se queda en la pantalla vacía.
+  }
+})();
 </script>
 </body>
 </html>
