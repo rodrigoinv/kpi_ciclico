@@ -262,7 +262,7 @@ const METHOD_TEXT = {
   pendientes: "Se listan las ubicaciones de la Matriz que llevan menos de 3 meses contados, ordenadas de menor a mayor % de avance. Se marca \u201cNunca contada\u201d si lleva 0 meses, o \u201cEn progreso\u201d si lleva 1 o 2 — estas últimas YA cumplen el ILA principal (basta 1 vez), pero faltan para el avance pleno.",
   sobrantesFaltantes: "De las líneas contadas, se separan las que tienen Diferencia > 0 (sobrante: el físico fue mayor al stock de sistema) de las que tienen Diferencia < 0 (faltante: el físico fue menor). La métrica principal son las <strong>unidades</strong> — suma de las diferencias positivas para sobrantes y suma de las negativas para faltantes — ya que lo importante es el impacto en inventario, no cuántas líneas tuvieron diferencia. La tabla de detalle muestra cada línea con su SKU, ubicación, stock de sistema, físico real y diferencia, ordenada por magnitud descendente.",
   productividad: "Se agrupan las líneas contadas por su \u201cFecha conteo\u201d y se cuenta cuántas líneas se registraron cada día, para ver el ritmo real de avance del conteo cíclico en el tiempo.",
-  riesgo: "Se filtran las líneas contadas con Diferencia distinta de 0 cuyo SKU es clase A o B (hoja ABC). Se ordenan por |Diferencia| × Sum of StockTotal (un proxy del valor/impacto del SKU) de mayor a menor, para priorizar qué discrepancias revisar primero según su impacto, no solo su tamaño.",
+  riesgo: "Se filtran las líneas contadas con Diferencia distinta de 0 cuyo SKU es clase A o B (hoja ABC). Se ordenan por |Diferencia| × Stock total SKU de mayor a menor, para priorizar qué discrepancias revisar primero según su impacto real: una diferencia pequeña en un SKU con miles de unidades en stock puede ser más crítica que una diferencia grande en un SKU de bajo volumen. El <strong>Stock total SKU</strong> es la suma de unidades en inventario de ese producto según el estudio ABC — no es su clasificación, sino su volumen.",
   dobleConteo: "Se filtran las líneas donde Conteo 1 y Conteo 2 (columnas O y P) tienen ambas un valor registrado y son distintas entre sí, ordenadas por la magnitud de esa diferencia. Sirve para detectar errores del operador antes de aceptar el conteo como físico real."
 };
 
@@ -879,7 +879,7 @@ function renderMain(d){
   }
   if(activeTab==="riesgo"){
     sortableTable("tbl_riesgo",
-      [{key:"sku",label:"SKU"},{key:"desc",label:"Descripción"},{key:"clase",label:"Clase"},{key:"dif",label:"Diferencia",num:true,render:r=>difCell(r.dif)},{key:"valor",label:"Valor (proxy)",num:true,render:r=>fmtNum(r.valor)}],
+      [{key:"sku",label:"SKU"},{key:"desc",label:"Descripción"},{key:"clase",label:"Clase"},{key:"dif",label:"Diferencia",num:true,render:r=>difCell(r.dif)},{key:"valor",label:"Stock total SKU",num:true,render:r=>fmtNum(r.valor)}],
       d.riesgo, ["sku","desc","clase"]);
   }
   if(activeTab==="dobleConteo"){
@@ -930,7 +930,7 @@ function exportToExcel(){
     ["Exactas", d.sobrantesFaltantes.iguales, 0]
   ]);
   addSheet("Productividad", ["Fecha","Líneas contadas"], (d.productividad||[]).map(r=>[r.fecha,r.n]));
-  addSheet("Riesgo de Inventario", ["SKU","Descripción","Clase","Diferencia","Valor (proxy)"],
+  addSheet("Riesgo de Inventario", ["SKU","Descripción","Clase","Diferencia","Stock total SKU"],
     (d.riesgo||[]).map(r=>[r.sku,r.desc,r.clase,r.dif,r.valor]));
   addSheet("Doble Conteo", ["SKU","Ubicación","Conteo 1","Conteo 2","Diferencia"],
     (d.dobleConteo||[]).map(r=>[r.sku,r.loc,r.c1,r.c2,r.dif]));
@@ -1083,7 +1083,7 @@ function buildPptxSlideDefs(d){
       else if(t.key==="pendientes"){ headers=["Zona","Ubicación","Estado","% Avance"]; rows=(d.pendientes||[]).map(r=>[r.zona,r.loc,r.estado||"",fmtPct(r.pct)]); }
       else if(t.key==="sobrantesFaltantes"){ headers=["Categoría","Líneas","Unidades"]; rows=[["Sobrantes",fmtNum(d.sobrantesFaltantes.sobrantes.n),fmtNum(d.sobrantesFaltantes.sobrantes.u)],["Faltantes",fmtNum(d.sobrantesFaltantes.faltantes.n),fmtNum(d.sobrantesFaltantes.faltantes.u)],["Exactas",fmtNum(d.sobrantesFaltantes.iguales),"0"]]; }
       else if(t.key==="productividad"){ headers=["Fecha","Líneas contadas"]; rows=(d.productividad||[]).map(r=>[r.fecha,fmtNum(r.n)]); }
-      else if(t.key==="riesgo"){ headers=["SKU","Descripción","Clase","Diferencia","Valor (proxy)"]; rows=(d.riesgo||[]).map(r=>[r.sku,r.desc,r.clase,fmtNum(r.dif),fmtNum(r.valor)]); }
+      else if(t.key==="riesgo"){ headers=["SKU","Descripción","Clase","Diferencia","Stock total SKU"]; rows=(d.riesgo||[]).map(r=>[r.sku,r.desc,r.clase,fmtNum(r.dif),fmtNum(r.valor)]); }
       else if(t.key==="dobleConteo"){ headers=["SKU","Ubicación","Conteo 1","Conteo 2","Diferencia"]; rows=(d.dobleConteo||[]).map(r=>[r.sku,r.loc,fmtNum(r.c1),fmtNum(r.c2),fmtNum(r.dif)]); }
       const total = rows.length;
       let note = t.desc;
