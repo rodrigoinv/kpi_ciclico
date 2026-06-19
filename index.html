@@ -380,6 +380,7 @@ function ingestSheet(rows, fallbackRole, ws){
     const ecnCol = colByPosition(ws, 19); // Columna T = ubicación real en Conteo cíclico
     RAW.conteo = rows.map((r,i)=>{
       const m = mapRow(r, HEADER_MAP_CONTEO);
+      m._fechaRaw = m.fecha; // guardar raw para diagnóstico
       m.fecha = normFecha(m.fecha); // ← normalizar fecha AQUÍ, una sola vez, sin ambigüedad
       const posVal = ecnCol[i];
       if(posVal!==undefined && String(posVal).trim()!=="") m.ecn = String(posVal).trim();
@@ -517,7 +518,11 @@ function showDiagnostics(){
   const sampleC = RAW.conteo.slice(0,3).map(r=>r.ecn).filter(Boolean).join(", ");
   const sampleU = RAW.ubicacion.slice(0,3).map(r=>r.ecn).filter(Boolean).join(", ");
   const parts = [`Conteo cíclico: ${cCount} filas (${cCounted} con físico real)`, `Matriz ubicación: ${uCount} filas`, `Estudio ABC: ${aCount} filas`, `Meses detectados: ${ymSet.size}/3 (${Array.from(ymSet).sort().join(", ")||"—"})`];
-  if(sampleC) parts.push(`Ej. ubicación en conteo (col. T): ${sampleC}`);
+  const sampleFechas = RAW.conteo.slice(0,3).map(r=>{
+    const raw = r._fechaRaw !== undefined ? r._fechaRaw : r.fecha;
+    return `"${r.fecha}" (raw: ${typeof raw}=${String(raw).slice(0,12)})`;
+  }).join(" | ");
+  if(sampleFechas) parts.push(`DEBUG fecha[0-2]: ${sampleFechas}`);
   if(sampleU) parts.push(`Ej. ubicación en matriz (col. H): ${sampleU}`);
   if(RAW.ubicacionDuplicadas) parts.push(`${RAW.ubicacionDuplicadas} filas duplicadas removidas de la matriz`);
   diag.innerHTML = "📋 " + parts.join(" · ") + (warnings.length ? "<br>⚠️ " + warnings.join(" · ") : "");
