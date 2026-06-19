@@ -497,7 +497,7 @@ async function fetchFromDrive(){
     ingestSheet(sheetToRows(wsAbc), "abc", wsAbc);
 
     finishLoad("manual");
-    setStatus("Google Sheets · actualizado " + new Date().toLocaleTimeString("es-MX"), "ok");
+    setStatus("📊 Google Sheets · " + new Date().toLocaleString("es-MX", {day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}), "ok");
   }catch(err){
     console.error(err);
     setStatus("No se pudo cargar desde Google Sheets — " + err.message, "err");
@@ -522,7 +522,7 @@ function finishLoad(mode){
   document.getElementById("filterBar").classList.toggle("disabled", mode==="drive");
   document.getElementById("filterNote").textContent = mode==="drive" ? "Filtros disponibles solo en modo carga manual (Drive entrega una vista resumida)." : "";
   if(mode==="manual") populateZonaOptions();
-  setStatus(mode==="drive" ? "Actualizado desde Drive · "+new Date().toLocaleTimeString("es-MX") : "Datos cargados manualmente · "+new Date().toLocaleTimeString("es-MX"), "live");
+  setStatus(mode==="drive" ? "📊 Google Sheets · "+new Date().toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "📁 Excel cargado manualmente · "+new Date().toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}), "live");
   if(mode==="manual") showDiagnostics();
   else document.getElementById("diagBar").style.display="none";
   renderTabs();
@@ -772,6 +772,10 @@ function computeAll(){
     .map(r=>({zona:r.estante, loc:r.ecn, meses:r.meses, pct:r.pct, estado: r.meses===0?"Nunca contada":"En progreso"}))
     .sort((a,b)=>a.pct-b.pct);
   const pendientes = pendRows.slice(0,300);
+  const todasUbicaciones = ubicacionConsolidada
+    .map(r=>({zona:r.estante, loc:r.ecn, meses:r.meses, pct:r.pct, estado: r.meses===0?"Nunca contada": r.meses>=PLAN_MESES?"Completa":"En progreso"}))
+    .sort((a,b)=>a.pct-b.pct)
+    .slice(0,500);
 
 
   // sobrantesFaltantes
@@ -816,7 +820,7 @@ function computeAll(){
     .sort((a,b)=>Math.abs(b.dif)-Math.abs(a.dif))
     .slice(0,30);
 
-  return {ira, ila, ia, topDiff, cobertura, coberturaSku, abcAcc, pendientes, pendientesTotal:ubNuncaContadas, enProgresoTotal:ubEnProgreso, sobrantesFaltantes, productividad, riesgo, dobleConteo};
+  return {ira, ila, ia, topDiff, cobertura, coberturaSku, abcAcc, pendientes, todasUbicaciones, pendientesTotal:ubNuncaContadas, enProgresoTotal:ubEnProgreso, sobrantesFaltantes, productividad, riesgo, dobleConteo};
 }
 
 /* ============================== RENDER ============================== */
@@ -947,10 +951,18 @@ function renderMain(d){
     body = `<div class="chart-wrap"><canvas id="chart_abc"></canvas></div><div id="tbl_abc"></div>`;
   }
   else if(activeTab==="pendientes"){
+    const completas = d.ilaDetalle ? d.ilaDetalle.filter(r=>r.meses>=3).length : 0;
     body = `<div class="cards-row">
-        <div class="card" style="border-left:3px solid var(--bad)"><div class="lbl">Nunca contadas</div><div class="val">${fmtNum(d.pendientesTotal)}</div></div>
-        <div class="card" style="border-left:3px solid var(--warn)"><div class="lbl">En progreso (1-2/3)</div><div class="val">${fmtNum(d.enProgresoTotal!==undefined?d.enProgresoTotal:0)}</div></div>
-      </div><div id="tbl_pendientes"></div>`;
+        <div class="card" style="border-left:3px solid var(--ok)"><div class="lbl">Completas (3/3)</div><div class="val" style="color:var(--ok)">${fmtNum(d.ila.completas)}</div></div>
+        <div class="card" style="border-left:3px solid var(--warn)"><div class="lbl">En progreso (1-2/3)</div><div class="val" style="color:var(--warn)">${fmtNum(d.enProgresoTotal!==undefined?d.enProgresoTotal:0)}</div></div>
+        <div class="card" style="border-left:3px solid var(--bad)"><div class="lbl">Nunca contadas (0/3)</div><div class="val" style="color:var(--bad)">${fmtNum(d.pendientesTotal)}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+        <span style="font-size:12px;color:var(--muted);font-weight:500;">VER:</span>
+        <button class="btn-mes active" id="btnVerTodas" onclick="document.getElementById('btnVerTodas').classList.add('active');document.getElementById('btnVerPend').classList.remove('active');renderAll();">Todas las ubicaciones</button>
+        <button class="btn-mes" id="btnVerPend" onclick="document.getElementById('btnVerPend').classList.add('active');document.getElementById('btnVerTodas').classList.remove('active');renderAll();">Solo pendientes</button>
+      </div>
+      <div id="tbl_pendientes"></div>`;
   }
   else if(activeTab==="sobrantesFaltantes"){
     body = `<div class="cards-row">
@@ -996,9 +1008,15 @@ function renderMain(d){
       d.abcAcc, ["clase"]);
   }
   if(activeTab==="pendientes"){
+    const solosPend = document.getElementById("btnVerPend")?.classList.contains("active");
+    const rows = solosPend ? d.pendientes : (d.todasUbicaciones||d.pendientes);
     sortableTable("tbl_pendientes",
-      [{key:"zona",label:"Zona"},{key:"loc",label:"Ubicación",render:r=>loc(r.loc,r.estado==="Nunca contada"?"bad":"warn")},{key:"estado",label:"Estado"},{key:"meses",label:"Meses cubiertos",num:true,render:r=>r.meses+"/3"},{key:"pct",label:"% Avance",num:true,render:r=>pctTag(r.pct)}],
-      d.pendientes, ["zona","loc","estado"]);
+      [{key:"zona",label:"Zona"},
+       {key:"loc",label:"Ubicación",render:r=>loc(r.loc, r.estado==="Nunca contada"?"bad": r.estado==="Completa"?"ok":"warn")},
+       {key:"estado",label:"Estado",render:r=>`<span style="color:${r.estado==="Completa"?"var(--ok)":r.estado==="Nunca contada"?"var(--bad)":"var(--warn)"};font-weight:500">${r.estado}</span>`},
+       {key:"meses",label:"Meses contada",num:true,render:r=>`<strong>${r.meses}</strong>/3`},
+       {key:"pct",label:"% Avance",num:true,render:r=>pctTag(r.pct)}],
+      rows, ["zona","loc","estado"]);
   }
   if(activeTab==="sobrantesFaltantes"){
     barChart("chart_sf",
@@ -1325,7 +1343,7 @@ document.getElementById("btnExportSnapshot").addEventListener("click", exportSna
     RAW.ubicacionDuplicadas = snap.ubicacionDuplicadas || 0;
     const when = snap.generatedAt ? new Date(snap.generatedAt).toLocaleString("es-MX") : "";
     finishLoad("manual");
-    setStatus("Datos publicados" + (when?" · actualizado "+when:""), "ok");
+    setStatus("🗂️ Snapshot publicado · actualizado " + when, "ok");
   }catch(e){
     // no hay data.json (normal si nadie ha publicado un snapshot todavía, o si se abre como archivo local file://) — se queda en la pantalla vacía.
   }
