@@ -421,7 +421,7 @@ function readFileAsWorkbook(file, cb){
   const reader = new FileReader();
   reader.onload = e=>{
     const data = new Uint8Array(e.target.result);
-    const wb = XLSX.read(data, {type:"array", cellDates:true});
+    const wb = XLSX.read(data, {type:"array"});
     cb(wb);
   };
   reader.readAsArrayBuffer(file);
@@ -463,7 +463,7 @@ async function fetchFromDrive(){
       const res = await fetch(url, {cache:"no-store"});
       if(!res.ok) throw new Error("HTTP " + res.status + " cargando " + label);
       const text = await res.text();
-      const wb = XLSX.read(text, {type:"string", cellDates:true});
+      const wb = XLSX.read(text, {type:"string"});
       return wb.Sheets[wb.SheetNames[0]];
     };
 
