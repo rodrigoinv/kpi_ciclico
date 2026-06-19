@@ -772,11 +772,10 @@ function computeAll(){
   const pendRows = ubicacionConsolidada.filter(r=>r.meses<PLAN_MESES)
     .map(r=>({zona:r.estante, loc:r.ecn, meses:r.meses, pct:r.pct, estado: r.meses===0?"Nunca contada":"En progreso"}))
     .sort((a,b)=>a.pct-b.pct);
-  const pendientes = pendRows.slice(0,300);
+  const pendientes = pendRows;
   const todasUbicaciones = ubicacionConsolidada
     .map(r=>({zona:r.estante, loc:r.ecn, meses:r.meses, pct:r.pct, estado: r.meses===0?"Nunca contada": r.meses>=PLAN_MESES?"Completa":"En progreso"}))
-    .sort((a,b)=>a.pct-b.pct)
-    .slice(0,500);
+    .sort((a,b)=>a.pct-b.pct);
 
 
   // sobrantesFaltantes
