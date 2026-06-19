@@ -282,6 +282,7 @@ const HEADER_MAP_ABC = {"sku":"sku","count of stocktotal":"countStock","sum of s
 let RAW = {conteo:[], ubicacion:[], abc:[], ubicacionDuplicadas:0};
 let MODE = "empty"; // empty | manual | drive
 let DRIVE_SUMMARY = null;
+let SHOW_SOLO_PENDIENTES = false; // toggle del reporte PEN: false=todas, true=solo pendientes
 let activeTab = "ira";
 let CHARTS = {};
 let FILTERS = {zona:"ALL", abc:new Set(["A","B","C","D"]), search:"", from:"", to:""};
@@ -951,7 +952,6 @@ function renderMain(d){
     body = `<div class="chart-wrap"><canvas id="chart_abc"></canvas></div><div id="tbl_abc"></div>`;
   }
   else if(activeTab==="pendientes"){
-    const completas = d.ilaDetalle ? d.ilaDetalle.filter(r=>r.meses>=3).length : 0;
     body = `<div class="cards-row">
         <div class="card" style="border-left:3px solid var(--ok)"><div class="lbl">Completas (3/3)</div><div class="val" style="color:var(--ok)">${fmtNum(d.ila.completas)}</div></div>
         <div class="card" style="border-left:3px solid var(--warn)"><div class="lbl">En progreso (1-2/3)</div><div class="val" style="color:var(--warn)">${fmtNum(d.enProgresoTotal!==undefined?d.enProgresoTotal:0)}</div></div>
@@ -959,8 +959,8 @@ function renderMain(d){
       </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
         <span style="font-size:12px;color:var(--muted);font-weight:500;">VER:</span>
-        <button class="btn-mes active" id="btnVerTodas" onclick="document.getElementById('btnVerTodas').classList.add('active');document.getElementById('btnVerPend').classList.remove('active');renderAll();">Todas las ubicaciones</button>
-        <button class="btn-mes" id="btnVerPend" onclick="document.getElementById('btnVerPend').classList.add('active');document.getElementById('btnVerTodas').classList.remove('active');renderAll();">Solo pendientes</button>
+        <button class="btn-mes ${!SHOW_SOLO_PENDIENTES?'active':''}" id="btnVerTodas">Todas las ubicaciones</button>
+        <button class="btn-mes ${SHOW_SOLO_PENDIENTES?'active':''}" id="btnVerPend">Solo pendientes</button>
       </div>
       <div id="tbl_pendientes"></div>`;
   }
@@ -1008,8 +1008,7 @@ function renderMain(d){
       d.abcAcc, ["clase"]);
   }
   if(activeTab==="pendientes"){
-    const solosPend = document.getElementById("btnVerPend")?.classList.contains("active");
-    const rows = solosPend ? d.pendientes : (d.todasUbicaciones||d.pendientes);
+    const rows = SHOW_SOLO_PENDIENTES ? d.pendientes : (d.todasUbicaciones||d.pendientes);
     sortableTable("tbl_pendientes",
       [{key:"zona",label:"Zona"},
        {key:"loc",label:"Ubicación",render:r=>loc(r.loc, r.estado==="Nunca contada"?"bad": r.estado==="Completa"?"ok":"warn")},
@@ -1017,6 +1016,8 @@ function renderMain(d){
        {key:"meses",label:"Meses contada",num:true,render:r=>`<strong>${r.meses}</strong>/3`},
        {key:"pct",label:"% Avance",num:true,render:r=>pctTag(r.pct)}],
       rows, ["zona","loc","estado"]);
+    document.getElementById("btnVerTodas")?.addEventListener("click",()=>{ SHOW_SOLO_PENDIENTES=false; renderAll(); });
+    document.getElementById("btnVerPend")?.addEventListener("click",()=>{ SHOW_SOLO_PENDIENTES=true; renderAll(); });
   }
   if(activeTab==="sobrantesFaltantes"){
     barChart("chart_sf",
