@@ -301,20 +301,24 @@ function fmtNum(n){ return new Intl.NumberFormat("es-MX").format(Math.round(n*10
 function pctClass(p){ return p>=95?"ok":(p>=85?"warn":"bad"); }
 function parseDate(s){
   if(!s) return null;
-  if(s instanceof Date) return isNaN(s.getTime())? null : s;
+  if(s instanceof Date){
+    if(isNaN(s.getTime())) return null;
+    // SheetJS construye dates con medianoche UTC — en Chile (UTC-3) eso se lee como el día anterior.
+    // Reconstruimos con los componentes UTC para tratar la fecha como "naive" local:
+    const d = new Date(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate());
+    return (d.getFullYear() < 2000 || d.getFullYear() > 2100) ? null : d;
+  }
   if(typeof s==="number"){
-    // Serial de Excel → fecha LOCAL (no UTC) para evitar el corrimiento de zona horaria
-    // (s-25569) = días desde el epoch de Unix; construimos la fecha en tiempo local
+    // Serial de Excel → fecha LOCAL sin conversión UTC
     const days = Math.round(s) - 25569;
     const d = new Date(1970, 0, 1 + days);
-    if(isNaN(d.getTime()) || d.getFullYear() < 2000 || d.getFullYear() > 2100) return null;
-    return d;
+    return (isNaN(d.getTime()) || d.getFullYear() < 2000 || d.getFullYear() > 2100) ? null : d;
   }
   const str = String(s).trim();
   let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); // ISO yyyy-mm-dd o yyyy-mm-ddTHH:...
-  if(m){ const d=new Date(+m[1], +m[2]-1, +m[3]); return isNaN(d.getTime())?null:d; }
+  if(m){ const d=new Date(+m[1], +m[2]-1, +m[3]); return (isNaN(d.getTime())||d.getFullYear()<2000)?null:d; }
   m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); // dd/mm/yyyy
-  if(m){ const d=new Date(+m[3], +m[2]-1, +m[1]); return isNaN(d.getTime())?null:d; }
+  if(m){ const d=new Date(+m[3], +m[2]-1, +m[1]); return (isNaN(d.getTime())||d.getFullYear()<2000)?null:d; }
   const d = new Date(str);
   return (isNaN(d.getTime()) || d.getFullYear() < 2000) ? null : d;
 }
