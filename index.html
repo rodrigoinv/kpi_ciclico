@@ -480,9 +480,9 @@ function finishLoad(mode){
   setStatus(mode==="drive" ? "Actualizado desde Drive · "+new Date().toLocaleTimeString("es-MX") : "Datos cargados manualmente · "+new Date().toLocaleTimeString("es-MX"), "live");
   if(mode==="manual") showDiagnostics();
   else document.getElementById("diagBar").style.display="none";
-  buildMonthBar();
   renderTabs();
   renderAll();
+  buildMonthBar(); // después de renderAll para que productividad.mes ya esté calculado
 }
 function showDiagnostics(){
   const diag = document.getElementById("diagBar");
@@ -513,13 +513,13 @@ function populateZonaOptions(){
 }
 
 function buildMonthBar(){
-  // Detecta todos los meses presentes en los datos — escala automáticamente sin importar cuántos sean
-  const mesesSet = new Set();
-  RAW.conteo.forEach(r=>{
-    const d = parseDate(r.fecha);
-    if(d && d.getFullYear() >= 2020 && d.getFullYear() <= 2099)
-      mesesSet.add(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));
-  });
+  if(MODE==="empty"){ document.getElementById("monthBar").style.display="none"; return; }
+  // Usa los meses de productividad (ya calculados correctamente en computeAll) en vez de
+  // re-parsear las fechas crudas — evita cualquier problema de zona horaria en el parseo.
+  const d = currentData();
+  const mesesSet = new Set(
+    (d.productividad||[]).map(r=>r.mes).filter(m=>m && m!=="S/F" && /^\d{4}-\d{2}$/.test(m))
+  );
   const meses = Array.from(mesesSet).sort();
   const bar = document.getElementById("monthBar");
   const btns = document.getElementById("monthBtns");
@@ -535,7 +535,6 @@ function buildMonthBar(){
       const already = btn.classList.contains("active");
       btns.querySelectorAll(".btn-mes").forEach(b=>b.classList.remove("active"));
       if(already){
-        // segundo clic en el mismo mes → quita el filtro
         FILTERS.from=""; FILTERS.to="";
         document.getElementById("fFrom").value="";
         document.getElementById("fTo").value="";
