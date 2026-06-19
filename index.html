@@ -649,8 +649,8 @@ function computeAll(){
                      ...falt.map(r=>({sku:r.sku,desc:r.itdesc||"",loc:r.ecn||"",sis:num(r.stockSistema),fis:num(r.fisicoReal),dif:num(r.diferencia)}))]
     .sort((a,b)=>Math.abs(b.dif)-Math.abs(a.dif));
   const sobrantesFaltantes = {
-    sobrantes:{n:sobr.length, u:sobr.reduce((a,r)=>a+num(r.diferencia),0)},
-    faltantes:{n:falt.length, u:falt.reduce((a,r)=>a+num(r.diferencia),0)},
+    sobrantes:{n:sobr.length, u:sobr.reduce((a,r)=>a+num(r.diferencia),0), skus:new Set(sobr.map(r=>r.sku)).size},
+    faltantes:{n:falt.length, u:falt.reduce((a,r)=>a+num(r.diferencia),0), skus:new Set(falt.map(r=>r.sku)).size},
     iguales: matches.length,
     detalle: sfDetalle
   };
@@ -816,8 +816,8 @@ function renderMain(d){
   }
   else if(activeTab==="sobrantesFaltantes"){
     body = `<div class="cards-row">
-        <div class="card"><div class="lbl">Sobrantes — unidades</div><div class="val" style="color:var(--info)">${fmtNum(d.sobrantesFaltantes.sobrantes.u)}</div><div class="sub">${fmtNum(d.sobrantesFaltantes.sobrantes.n)} líneas</div></div>
-        <div class="card"><div class="lbl">Faltantes — unidades</div><div class="val" style="color:var(--bad)">${fmtNum(d.sobrantesFaltantes.faltantes.u)}</div><div class="sub">${fmtNum(d.sobrantesFaltantes.faltantes.n)} líneas</div></div>
+        <div class="card"><div class="lbl">Sobrantes — unidades</div><div class="val" style="color:var(--info)">${fmtNum(d.sobrantesFaltantes.sobrantes.u)}</div><div class="sub">${fmtNum(d.sobrantesFaltantes.sobrantes.n)} líneas · ${fmtNum(d.sobrantesFaltantes.sobrantes.skus)} SKUs</div></div>
+        <div class="card"><div class="lbl">Faltantes — unidades</div><div class="val" style="color:var(--bad)">${fmtNum(d.sobrantesFaltantes.faltantes.u)}</div><div class="sub">${fmtNum(d.sobrantesFaltantes.faltantes.n)} líneas · ${fmtNum(d.sobrantesFaltantes.faltantes.skus)} SKUs</div></div>
         <div class="card"><div class="lbl">Exactas</div><div class="val" style="color:var(--ok)">${fmtNum(d.sobrantesFaltantes.iguales)}</div><div class="sub">líneas sin diferencia</div></div>
       </div>
       <div class="chart-wrap"><canvas id="chart_sf"></canvas></div>
