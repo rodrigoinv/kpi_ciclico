@@ -453,21 +453,43 @@ const SHEETS_CSV = {
 };
 
 /* ============================== DRIVE FETCH (CSV directo desde Google Sheets publicadas) ============================== */
+
+// Normaliza las fechas de la primera columna de un CSV de D/M/YYYY o DD/MM/YYYY a YYYY-MM-DD
+// antes de pasarlas a SheetJS, para evitar que auto-detecte "1/6/2026" como enero 6 (formato MM/DD americano)
+function normalizeCsvFechas(csvText){
+  const lines = csvText.split('\n');
+  return lines.map((line, i) => {
+    if(i === 0) return line; // fila de encabezados, no tocar
+    const firstComma = line.indexOf(',');
+    if(firstComma < 0) return line;
+    const firstField = line.substring(0, firstComma).trim().replace(/^"|"$/g,'');
+    const rest = line.substring(firstComma);
+    const m = firstField.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m){
+      const [,d,mo,y] = m;
+      const iso = `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      return iso + rest;
+    }
+    return line;
+  }).join('\n');
+}
+
 async function fetchFromDrive(){
   setStatus("Cargando desde Google Sheets...", null);
   document.getElementById("btnDrive").disabled = true;
   try{
-    const fetchSheet = async (url, label) => {
+    const fetchSheet = async (url, label, normalizeFirst=false) => {
       setStatus("Descargando " + label + "...", null);
       const res = await fetch(url, {cache:"no-store"});
       if(!res.ok) throw new Error("HTTP " + res.status + " cargando " + label);
-      const text = await res.text();
-      const wb = XLSX.read(text, {type:"string"}); // sin cellDates: fechas quedan como strings DD/MM/YYYY del Sheet
+      let text = await res.text();
+      if(normalizeFirst) text = normalizeCsvFechas(text); // reescribe fechas col A a ISO
+      const wb = XLSX.read(text, {type:"string"});
       return wb.Sheets[wb.SheetNames[0]];
     };
 
     RAW = {conteo:[], ubicacion:[], abc:[], ubicacionDuplicadas:0};
-    const wsConteo = await fetchSheet(SHEETS_CSV.conteo, "Conteo cíclico");
+    const wsConteo = await fetchSheet(SHEETS_CSV.conteo, "Conteo cíclico", true); // ← normaliza fechas
     ingestSheet(sheetToRows(wsConteo), "conteo", wsConteo);
     const wsUbic = await fetchSheet(SHEETS_CSV.ubicacion, "Matriz de ubicación");
     ingestSheet(sheetToRows(wsUbic), "ubicacion", wsUbic);
