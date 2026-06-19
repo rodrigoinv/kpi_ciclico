@@ -345,7 +345,7 @@ function detectRole(headers){
   return null;
 }
 function sheetToRows(ws){
-  const json = XLSX.utils.sheet_to_json(ws, {defval:"", raw:false});
+  const json = XLSX.utils.sheet_to_json(ws, {defval:""});
   return json;
 }
 function colByPosition(ws, colIndex){
@@ -364,7 +364,7 @@ function normFecha(v){
     return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
   }
   if(typeof v==="number"){
-    const days = Math.round(v)-25569;
+    const days = Math.floor(v)-25569;
     const dt = new Date(1970,0,1+days);
     if(isNaN(dt.getTime())||dt.getFullYear()<2000||dt.getFullYear()>2100) return "";
     return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
