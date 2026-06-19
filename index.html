@@ -345,7 +345,7 @@ function detectRole(headers){
   return null;
 }
 function sheetToRows(ws){
-  const json = XLSX.utils.sheet_to_json(ws, {defval:""});
+  const json = XLSX.utils.sheet_to_json(ws, {defval:"", raw:false});
   return json;
 }
 function colByPosition(ws, colIndex){
@@ -354,26 +354,22 @@ function colByPosition(ws, colIndex){
   return arr.slice(1).map(row=>row[colIndex]);
 }
 function normFecha(v){
-  // Convierte cualquier valor de fecha a "dd/mm/yyyy" en el momento de ingesta.
-  // Al guardar como string dd/mm/yyyy, todo el código aguas abajo trabaja con texto limpio
-  // y nunca hay riesgo de corrimiento por zona horaria (UTC vs local).
+  // Con raw:false + dateNF:'yyyy-mm-dd', SheetJS entrega fechas como "2026-04-01" (ISO sin ambigüedad).
+  // Para otros tipos (Date legacy del snapshot, número), mantenemos los fallbacks.
   if(!v && v!==0) return "";
   if(v instanceof Date){
     if(isNaN(v.getTime())) return "";
-    // SheetJS crea Date objects con medianoche UTC — usamos componentes UTC para recuperar la fecha original
     const y=v.getUTCFullYear(), mo=v.getUTCMonth()+1, d=v.getUTCDate();
     if(y<2000||y>2100) return "";
-    return `${String(d).padStart(2,"0")}/${String(mo).padStart(2,"0")}/${y}`;
+    return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
   }
   if(typeof v==="number"){
-    // Serial de Excel → fecha local sin conversión UTC
     const days = Math.round(v)-25569;
     const dt = new Date(1970,0,1+days);
     if(isNaN(dt.getTime())||dt.getFullYear()<2000||dt.getFullYear()>2100) return "";
-    return `${String(dt.getDate()).padStart(2,"0")}/${String(dt.getMonth()+1).padStart(2,"0")}/${dt.getFullYear()}`;
+    return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
   }
-  // String: si ya viene como dd/mm/yyyy o similar, lo dejamos pasar (parseDate lo maneja)
-  return String(v).trim();
+  return String(v).trim(); // "2026-04-01" o similar — parseDate lo maneja con regex ISO
 }
 
 function ingestSheet(rows, fallbackRole, ws){
