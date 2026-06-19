@@ -462,7 +462,7 @@ async function fetchFromDrive(){
       const res = await fetch(url, {cache:"no-store"});
       if(!res.ok) throw new Error("HTTP " + res.status + " cargando " + label);
       const text = await res.text();
-      const wb = XLSX.read(text, {type:"string", cellDates:true});
+      const wb = XLSX.read(text, {type:"string"}); // sin cellDates: fechas quedan como strings DD/MM/YYYY del Sheet
       return wb.Sheets[wb.SheetNames[0]];
     };
 
